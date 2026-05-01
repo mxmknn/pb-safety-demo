@@ -14,17 +14,19 @@ public:
     ~Calculations_Energy_window() override = default;
 
 private:
-    QPushButton *closeButton = nullptr;
-
     QTableView *unitsTable = nullptr;
     QTableView *blocksTable = nullptr;
 
     QStandardItemModel *unitsModel = nullptr;
     QStandardItemModel *blocksModel = nullptr;
 
+    QPushButton *closeButton = nullptr;
+
     void buildInterface();
     void createUnitsTable();
     void createBlocksTable();
+
+    QPushButton *createButton(const QString &text, int width = 110);
 
     void addUnitRow();
     void deleteSelectedUnitRow();
@@ -34,7 +36,7 @@ private:
     void deleteSelectedBlockRow();
     void copySelectedBlockRow();
 
-    void moveSelectedRow(QTableView *table, QStandardItemModel *model, int direction);
+    void selectRowByDirection(QTableView *table, QStandardItemModel *model, int direction);
 };
 
 #endif
