@@ -11,12 +11,24 @@
 #include <QSplitter>
 #include <QFont>
 
-Calculations_Energy_window::Calculations_Energy_window(QWidget *parent) //конструктор окна
+Calculations_Energy_window::Calculations_Energy_window(QWidget *parent)
     : QMainWindow(parent)
 {
-    setupUi();
-    // setupTables();
-    // fillTestData();
+    QWidget *central = new QWidget(this);
+    setCentralWidget(central);
+
+    QVBoxLayout *layout = new QVBoxLayout(central);
+
+    QLabel *label = new QLabel("Окно расчетов открылось", this);
+    QPushButton *closeBtn = new QPushButton("Закрыть", this);
+
+    layout->addWidget(label);
+    layout->addWidget(closeBtn);
+
+    connect(closeBtn, &QPushButton::clicked, this, &Calculations_Energy_window::close);
+
+    resize(600, 400);
+    setWindowTitle("Расчеты энергопотенциалов");
     setAttribute(Qt::WA_DeleteOnClose);
 }
 
