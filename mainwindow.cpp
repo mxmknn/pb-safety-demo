@@ -106,9 +106,9 @@ void MainWindow::setupUi()
         setWindowTitle("Нажата кнопка настроек");
     });
 
-    connect(helpButton, &QPushButton::clicked, this, [this]() {
-        setWindowTitle("Нажата кнопка помощи");
-    });
+    // connect(helpButton, &QPushButton::clicked, this, [this]() {
+    //     setWindowTitle("Нажата кнопка помощи");
+    // });
 
     // connect(exitButton, &QPushButton::clicked, this, [this]() {
     //     setWindowTitle("Нажата кнопка выхода");
@@ -125,7 +125,7 @@ void MainWindow::setupUi()
 //         QMessageBox::information(this, "Настройки", "Раздел настроек пока не реализован.");
 //     });
 
-//     connect(helpButton, &QPushButton::clicked, this, [this]() {
-//         QMessageBox::information(this, "Помощь", "Раздел помощи пока не реализован.");
-//     });
+    connect(helpButton, &QPushButton::clicked, this, [this]() {
+        QMessageBox::information(this, "Помощь", "Раздел помощи пока не реализован.");
+    });
 }
