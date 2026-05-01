@@ -27,6 +27,7 @@ private:
 
     QTableWidget *createUnitsTable();
     QTableWidget *createBlocksTable();
+    void moveSelectedRow(QTableWidget *table,int direction);
 };
 
 #endif

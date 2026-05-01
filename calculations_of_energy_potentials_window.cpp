@@ -16,12 +16,40 @@ Calculations_Energy_window::Calculations_Energy_window(QWidget *parent) //кон
 {
     setupUi();
     // setupTables();
-    fillTestData();
+    // fillTestData();
     setAttribute(Qt::WA_DeleteOnClose);
 }
 
 Calculations_Energy_window::~Calculations_Energy_window()
 {
+}
+
+void Calculations_Energy_window::moveSelectedRow(QTableWidget *table, int direction)
+{
+    int currentRow = table->currentRow();
+    if (currentRow < 0) return;
+
+    int newRow = currentRow + direction;
+
+    if (newRow < 0 || newRow >= table->rowCount()) return;
+
+    table->insertRow(newRow);
+
+    int sourceRow = currentRow;
+
+    if (direction < 0) {
+        sourceRow = currentRow + 1;
+    }
+
+    for (int col = 0; col < table->columnCount(); ++col) {
+        QTableWidgetItem *item = table->takeItem(sourceRow, col);
+        table->setItem(newRow, col, item);
+    }
+
+    table->removeRow(sourceRow);
+
+    table->selectRow(newRow);
+    table->setCurrentCell(newRow, 0);
 }
 
 QTableWidget *Calculations_Energy_window::createUnitsTable()//табличка верхняя
@@ -48,7 +76,9 @@ QTableWidget *Calculations_Energy_window::createUnitsTable()//табличка �
 
     table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     table->verticalHeader()->setVisible(false);
-
+    table->setMinimumHeight(230);
+    table->horizontalHeader()->setFixedHeight(28);
+    table->verticalHeader()->setDefaultSectionSize(26);
     table->setSelectionBehavior(QAbstractItemView::SelectRows);
     table->setSelectionMode(QAbstractItemView::SingleSelection);
     table->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -65,7 +95,7 @@ QTableWidget *Calculations_Energy_window::createUnitsTable()//табличка �
     return table;
 }
 
-QTableWidget *Calculations_Energy_window::createBlocksTable()
+QTableWidget *Calculations_Energy_window::createBlocksTable()//нижняя табличка
 {
     QTableWidget *table = new QTableWidget(this);
 
@@ -105,7 +135,9 @@ QTableWidget *Calculations_Energy_window::createBlocksTable()
 
     table->verticalHeader()->setVisible(false);
     table->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
-
+    table->horizontalHeader()->setFixedHeight(85);
+    table->verticalHeader()->setDefaultSectionSize(28);
+    table->setMinimumHeight(180);
     table->setColumnWidth(0, 380);
     table->setColumnWidth(1, 90);
     table->setColumnWidth(2, 130);
@@ -125,84 +157,291 @@ QTableWidget *Calculations_Energy_window::createBlocksTable()
 
     table->setShowGrid(true);
     table->setAlternatingRowColors(false);
-
-    table->setStyleSheet(
-        "QTableWidget {"
-        "    background-color: white;"
-        "    gridline-color: #bfbfbf;"
-        "    font-size: 14px;"
-        "}"
-        "QHeaderView::section {"
-        "    background-color: #eeeeee;"
-        "    color: black;"
-        "    border: 1px solid #a8a8a8;"
-        "    padding: 3px;"
-        "    font-size: 14px;"
-        "}"
-        "QTableWidget::item:selected {"
-        "    background-color: white;"
-        "    color: black;"
-        "}"
-        );
-
     table->setMinimumHeight(160);
 
     return table;
 }
 
-void Calculations_Energy_window::setupUi() // внешка окна
+void Calculations_Energy_window::setupUi()
 {
     QWidget *central = new QWidget(this);
     setCentralWidget(central);
 
     setWindowTitle("Расчеты энергопотенциалов");
-    resize(1200, 750);
+    resize(1250, 700);
 
-    QLabel *titleLabel = new QLabel("Расчеты энергопотенциалов и категорий взрывоопасности", this);
+    unitsTable = createUnitsTable();
+    blocksTable = createBlocksTable();
 
-    QFont titleFont;
-    titleFont.setPointSize(16);
-    titleFont.setBold(true);
-    titleLabel->setFont(titleFont);
+    QPushButton *unitEditButton = new QPushButton("Редактор", this);
+    QPushButton *unitAddButton = new QPushButton("Добавить", this);
+    QPushButton *unitDeleteButton = new QPushButton("Удалить", this);
+    QPushButton *unitCopyButton = new QPushButton("Копировать", this);
+    QPushButton *reportButton = new QPushButton("Отчёт", this);
+    QPushButton *deletedButton = new QPushButton("Удаленные", this);
 
-    unitsTable = createUnitsTable(); //вызываем верхнюю табличку
-    blocksTable = createBlocksTable(); //вызываем нижнюю табличку
+    QPushButton *unitUpButton = new QPushButton("⌃", this);
+    QPushButton *unitDownButton = new QPushButton("⌄", this);
 
-    QGroupBox *unitsGroup = new QGroupBox("Установки", this);
-    QVBoxLayout *unitsLayout = new QVBoxLayout;
-    unitsLayout->addWidget(unitsTable);
-    unitsGroup->setLayout(unitsLayout);
+    QPushButton *blockEditButton = new QPushButton("Редактор", this);
+    QPushButton *blockAddButton = new QPushButton("Добавить", this);
+    QPushButton *blockDeleteButton = new QPushButton("Удалить", this);
+    QPushButton *blockCopyButton = new QPushButton("Копировать", this);
 
-    QGroupBox *blocksGroup = new QGroupBox("Блоки", this);
-    QVBoxLayout *blocksLayout = new QVBoxLayout;
-    blocksLayout->addWidget(blocksTable);
-    blocksGroup->setLayout(blocksLayout);
+    QPushButton *blockUpButton = new QPushButton("⌃", this);
+    QPushButton *blockDownButton = new QPushButton("⌄", this);
 
-    QSplitter *splitter = new QSplitter(Qt::Vertical, this);
-    splitter->addWidget(unitsGroup);
-    splitter->addWidget(blocksGroup);
-    splitter->setStretchFactor(0, 1);
-    splitter->setStretchFactor(1, 2);
-
-    backButton = new QPushButton("Назад в меню", this);
     closeButton = new QPushButton("Закрыть", this);
+    QPushButton *helpButton = new QPushButton("Помощь", this);
+
+    QList<QPushButton*> buttons = {
+        unitEditButton, unitAddButton, unitDeleteButton, unitCopyButton,
+        reportButton, deletedButton, unitUpButton, unitDownButton,
+        blockEditButton, blockAddButton, blockDeleteButton, blockCopyButton,
+        blockUpButton, blockDownButton, closeButton, helpButton
+    };
+
+    for (QPushButton *button : buttons) {
+        button->setMinimumHeight(34);
+        button->setCursor(Qt::PointingHandCursor);
+    }
+
+    unitEditButton->setMinimumWidth(120);
+    unitAddButton->setMinimumWidth(120);
+    unitDeleteButton->setMinimumWidth(120);
+    unitCopyButton->setMinimumWidth(120);
+    reportButton->setMinimumWidth(120);
+    deletedButton->setMinimumWidth(120);
+
+    blockEditButton->setMinimumWidth(120);
+    blockAddButton->setMinimumWidth(120);
+    blockDeleteButton->setMinimumWidth(120);
+    blockCopyButton->setMinimumWidth(120);
+
+    closeButton->setMinimumWidth(120);
+    helpButton->setMinimumWidth(120);
+
+    QLabel *unitsLabel = new QLabel("Установки :", this);
+    QLabel *blocksLabel = new QLabel("Блоки :", this);
+
+    QFont labelFont;
+    labelFont.setBold(true);
+    unitsLabel->setFont(labelFont);
+    blocksLabel->setFont(labelFont);
+
+    QVBoxLayout *unitButtonsLayout = new QVBoxLayout;
+    unitButtonsLayout->addWidget(unitEditButton);
+    unitButtonsLayout->addWidget(unitAddButton);
+    unitButtonsLayout->addWidget(unitDeleteButton);
+    unitButtonsLayout->addWidget(unitCopyButton);
+    unitButtonsLayout->addWidget(reportButton);
+    unitButtonsLayout->addSpacing(15);
+    unitButtonsLayout->addWidget(deletedButton);
+    unitButtonsLayout->addStretch();
+
+    QVBoxLayout *unitMoveButtonsLayout = new QVBoxLayout;
+    unitMoveButtonsLayout->addSpacing(80);
+    unitMoveButtonsLayout->addWidget(unitUpButton);
+    unitMoveButtonsLayout->addWidget(unitDownButton);
+    unitMoveButtonsLayout->addStretch();
+
+    QHBoxLayout *unitsContentLayout = new QHBoxLayout;
+    unitsContentLayout->addWidget(unitsTable, 1);
+    unitsContentLayout->addLayout(unitButtonsLayout);
+    unitsContentLayout->addLayout(unitMoveButtonsLayout);
+
+    QVBoxLayout *topLayout = new QVBoxLayout;
+    topLayout->addWidget(unitsLabel);
+    topLayout->addLayout(unitsContentLayout);
+
+    QHBoxLayout *blockButtonsLayout = new QHBoxLayout;
+    blockButtonsLayout->addWidget(blockUpButton);
+    blockButtonsLayout->addWidget(blockDownButton);
+    blockButtonsLayout->addStretch();
+    blockButtonsLayout->addWidget(blockEditButton);
+    blockButtonsLayout->addWidget(blockAddButton);
+    blockButtonsLayout->addWidget(blockDeleteButton);
+    blockButtonsLayout->addWidget(blockCopyButton);
+    blockButtonsLayout->addStretch();
+
+    QVBoxLayout *blocksLayout = new QVBoxLayout;
+    blocksLayout->addWidget(blocksLabel);
+    blocksLayout->addWidget(blocksTable);
+    blocksLayout->addLayout(blockButtonsLayout);
 
     QHBoxLayout *bottomLayout = new QHBoxLayout;
     bottomLayout->addStretch();
-    bottomLayout->addWidget(backButton);
     bottomLayout->addWidget(closeButton);
+    bottomLayout->addWidget(helpButton);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(central);
-    mainLayout->addWidget(titleLabel);
-    mainLayout->addWidget(splitter);
+    mainLayout->addLayout(topLayout);
+    mainLayout->addLayout(blocksLayout);
+    mainLayout->addStretch();
     mainLayout->addLayout(bottomLayout);
 
     connect(closeButton, &QPushButton::clicked, this, &Calculations_Energy_window::close);
 
-    connect(backButton, &QPushButton::clicked, this, [this]() {
-        this->close();
-
+    connect(unitAddButton, &QPushButton::clicked, this, [this]() {
+        int row = unitsTable->rowCount();
+        unitsTable->insertRow(row);
+        unitsTable->setItem(row, 0, new QTableWidgetItem("Новая установка"));
+        unitsTable->setItem(row, 1, new QTableWidgetItem("Комментарий"));
+        unitsTable->selectRow(row);
     });
+
+    connect(unitDeleteButton, &QPushButton::clicked, this, [this]() {
+        int row = unitsTable->currentRow();
+        if (row >= 0) {
+            unitsTable->removeRow(row);
+        }
+    });
+
+    connect(unitCopyButton, &QPushButton::clicked, this, [this]() {
+        int row = unitsTable->currentRow();
+        if (row < 0) return;
+
+        int newRow = unitsTable->rowCount();
+        unitsTable->insertRow(newRow);
+
+        for (int col = 0; col < unitsTable->columnCount(); ++col) {
+            QTableWidgetItem *oldItem = unitsTable->item(row, col);
+            if (oldItem) {
+                unitsTable->setItem(newRow, col, oldItem->clone());
+            }
+        }
+
+        unitsTable->selectRow(newRow);
+    });
+
+    connect(blockAddButton, &QPushButton::clicked, this, [this]() {
+        int row = blocksTable->rowCount();
+        blocksTable->insertRow(row);
+
+        blocksTable->setItem(row, 0, new QTableWidgetItem("Новый блок"));
+        blocksTable->setItem(row, 1, new QTableWidgetItem("0,1"));
+
+        QTableWidgetItem *toxicItem = new QTableWidgetItem();
+        toxicItem->setFlags(toxicItem->flags() | Qt::ItemIsUserCheckable);
+        toxicItem->setCheckState(Qt::Unchecked);
+        blocksTable->setItem(row, 2, toxicItem);
+
+        blocksTable->setItem(row, 3, new QTableWidgetItem("2"));
+        blocksTable->setItem(row, 4, new QTableWidgetItem("0"));
+        blocksTable->setItem(row, 5, new QTableWidgetItem("0"));
+        blocksTable->setItem(row, 6, new QTableWidgetItem("0"));
+        blocksTable->setItem(row, 7, new QTableWidgetItem("0"));
+
+        QTableWidgetItem *zoneItem = new QTableWidgetItem();
+        zoneItem->setFlags(zoneItem->flags() | Qt::ItemIsUserCheckable);
+        zoneItem->setCheckState(Qt::Unchecked);
+        blocksTable->setItem(row, 8, zoneItem);
+
+        blocksTable->selectRow(row);
+    });
+
+    connect(blockDeleteButton, &QPushButton::clicked, this, [this]() {
+        int row = blocksTable->currentRow();
+        if (row >= 0) {
+            blocksTable->removeRow(row);
+        }
+    });
+
+    connect(blockCopyButton, &QPushButton::clicked, this, [this]() {
+        int row = blocksTable->currentRow();
+        if (row < 0) return;
+
+        int newRow = blocksTable->rowCount();
+        blocksTable->insertRow(newRow);
+
+        for (int col = 0; col < blocksTable->columnCount(); ++col) {
+            QTableWidgetItem *oldItem = blocksTable->item(row, col);
+            if (oldItem) {
+                blocksTable->setItem(newRow, col, oldItem->clone());
+            }
+        }
+
+        blocksTable->selectRow(newRow);
+    });
+    //движение по таблицам вверх и вниз
+    connect(unitUpButton, &QPushButton::clicked, this, [this]() {
+        moveSelectedRow(unitsTable, -1);
+    });
+
+    connect(unitDownButton, &QPushButton::clicked, this, [this]() {
+        moveSelectedRow(unitsTable, 1);
+    });
+
+    connect(blockUpButton, &QPushButton::clicked, this, [this]() {
+        moveSelectedRow(blocksTable, -1);
+    });
+
+    connect(blockDownButton, &QPushButton::clicked, this, [this]() {
+        moveSelectedRow(blocksTable, 1);
+    });
+
+    setStyleSheet(
+        "QMainWindow, QWidget {"
+        "    background-color: #efefef;"
+        "    font-family: Arial;"
+        "    font-size: 14px;"
+        "}"
+
+        "QLabel {"
+        "    color: black;"
+        "}"
+
+        "QTableWidget {"
+        "    background-color: white;"
+        "    alternate-background-color: white;"
+        "    gridline-color: #c8c8c8;"
+        "    color: black;"
+        "    border: 1px solid #b0b0b0;"
+        "    selection-background-color: black;"
+        "    selection-color: white;"
+        "}"
+
+        "QHeaderView::section {"
+        "    background-color: #f5f5f5;"
+        "    color: black;"
+        "    border: 1px solid #c0c0c0;"
+        "    padding: 4px;"
+        "    font-weight: bold;"
+        "}"
+
+        "QTableWidget::item {"
+        "    padding: 2px;"
+        "}"
+
+        "QTableWidget::item:selected {"
+        "    background-color: black;"
+        "    color: white;"
+        "}"
+
+        "QPushButton {"
+        "    background-color: #f2f2f2;"
+        "    color: black;"
+        "    border: 1px solid #9f9f9f;"
+        "    padding: 5px 14px;"
+        "}"
+
+        "QPushButton:hover {"
+        "    background-color: #e1e1e1;"
+        "}"
+
+        "QPushButton:pressed {"
+        "    background-color: #d0d0d0;"
+        "}"
+
+        "QPushButton:disabled {"
+        "    color: #888888;"
+        "    background-color: #dddddd;"
+        "}"
+
+        "QPushButton[text=\"Закрыть\"], QPushButton[text=\"Отчёт\"] {"
+        "    font-weight: bold;"
+        "}"
+        );
 }
 
 void Calculations_Energy_window::fillTestData()
