@@ -4,7 +4,8 @@
 #include <QMainWindow>
 
 class QPushButton;
-class QTableWidget;
+class QTableView;
+class QStandardItemModel;
 
 class Calculations_Energy_window : public QMainWindow
 {
@@ -15,10 +16,15 @@ public:
 private:
     QPushButton *closeButton = nullptr;
 
-    QTableWidget *unitsTable = nullptr;
-    QTableWidget *blocksTable = nullptr;
+    QTableView *unitsTable = nullptr;
+    QTableView *blocksTable = nullptr;
+
+    QStandardItemModel *unitsModel = nullptr;
+    QStandardItemModel *blocksModel = nullptr;
 
     void buildInterface();
+    void createUnitsTable();
+    void createBlocksTable();
 };
 
 #endif
