@@ -126,6 +126,11 @@ void MainWindow::setupUi()
 //     });
 
     connect(helpButton, &QPushButton::clicked, this, [this]() {
-        QMessageBox::information(this, "Помощь", "Раздел помощи пока не реализован.");
+        QMessageBox msgBox(this);
+        msgBox.setWindowTitle("Помощь");
+        msgBox.setText("Раздел помощи пока не реализован.");
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        msgBox.exec();
     });
 }
