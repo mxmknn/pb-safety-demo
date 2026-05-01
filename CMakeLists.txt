@@ -88,6 +88,7 @@ if(QT_VERSION_MAJOR EQUAL 6)
     qt_standard_project_setup()
 
     qt_add_executable(pb_safety
+        MACOSX_BUNDLE
         main.cpp
         mainwindow.h
         mainwindow.cpp
