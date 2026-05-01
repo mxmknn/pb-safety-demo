@@ -3,7 +3,6 @@
 
 #include <QMainWindow>
 
-class QTableWidget;
 class QPushButton;
 
 class Calculations_Energy_window : public QMainWindow
@@ -13,15 +12,9 @@ public:
     ~Calculations_Energy_window() override = default;
 
 private:
-    QTableWidget *unitsTable = nullptr;
-    QTableWidget *blocksTable = nullptr;
-
     QPushButton *closeButton = nullptr;
 
     void buildInterface();
-
-    QTableWidget *createUnitsTable();
-    QTableWidget *createBlocksTable();
 };
 
 #endif
