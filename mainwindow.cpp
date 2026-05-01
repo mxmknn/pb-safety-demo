@@ -32,11 +32,9 @@ void MainWindow::openCalculations_energy_Window()
 
     connect(calculations_energy_Window, &QObject::destroyed, this, [this]() {
         calculations_energy_Window = nullptr;
-        this->show();
     });
 
     calculations_energy_Window->show();
-    this->hide();
 }
 
 void MainWindow::setupUi()
