@@ -12,7 +12,7 @@ class Calculations_Energy_window : public QMainWindow
 
 public:
     explicit Calculations_Energy_window(QWidget *parent = nullptr);
-    ~Calculations_Energy_window();
+    ~Calculations_Energy_window() override = default;
 
 private:
     QTableWidget *unitsTable = nullptr;
