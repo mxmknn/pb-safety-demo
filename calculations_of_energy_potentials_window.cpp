@@ -114,19 +114,22 @@ QTableWidget *Calculations_Energy_window::createBlocksTable()//нижняя та
     table->setItem(0, 0, new QTableWidgetItem("Аппарат с газовой фазой"));
     table->setItem(0, 1, new QTableWidgetItem("0,1"));
 
-    QTableWidgetItem *toxicItem = new QTableWidgetItem();
-    toxicItem->setFlags(toxicItem->flags() | Qt::ItemIsUserCheckable);
-    toxicItem->setCheckState(Qt::Unchecked);
-    table->setItem(0, 2, toxicItem);
+    QTableWidgetItem *toxicItem = new QTableWidgetItem("");
 
+    toxicItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
+
+    toxicItem->setCheckState(Qt::Unchecked);
+
+    table->setItem(0, 2, toxicItem);
     table->setItem(0, 3, new QTableWidgetItem("2"));
     table->setItem(0, 4, new QTableWidgetItem("1,28E+08"));
     table->setItem(0, 5, new QTableWidgetItem("2,78E+03"));
     table->setItem(0, 6, new QTableWidgetItem("30,49"));
     table->setItem(0, 7, new QTableWidgetItem("7,741"));
 
-    QTableWidgetItem *zoneItem = new QTableWidgetItem();
-    zoneItem->setFlags(zoneItem->flags() | Qt::ItemIsUserCheckable);
+    QTableWidgetItem *zoneItem = new QTableWidgetItem("");
+
+    zoneItem->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
     zoneItem->setCheckState(Qt::Checked);
     table->setItem(0, 8, zoneItem);
 
@@ -441,38 +444,38 @@ void Calculations_Energy_window::setupUi()
     //     );
 }
 
-void Calculations_Energy_window::fillTestData()
-{
-    unitsTable->setRowCount(2);
+// void Calculations_Energy_window::fillTestData()
+// {
+//     unitsTable->setRowCount(2);
 
-    unitsTable->setItem(0, 0, new QTableWidgetItem("1"));
-    unitsTable->setItem(0, 1, new QTableWidgetItem("Установка подготовки газа"));
-    unitsTable->setItem(0, 2, new QTableWidgetItem("Основная установка"));
+//     unitsTable->setItem(0, 0, new QTableWidgetItem("1"));
+//     unitsTable->setItem(0, 1, new QTableWidgetItem("Установка подготовки газа"));
+//     unitsTable->setItem(0, 2, new QTableWidgetItem("Основная установка"));
 
-    unitsTable->setItem(1, 0, new QTableWidgetItem("2"));
-    unitsTable->setItem(1, 1, new QTableWidgetItem("Насосная станция"));
-    unitsTable->setItem(1, 2, new QTableWidgetItem("Перекачка продукта"));
+//     unitsTable->setItem(1, 0, new QTableWidgetItem("2"));
+//     unitsTable->setItem(1, 1, new QTableWidgetItem("Насосная станция"));
+//     unitsTable->setItem(1, 2, new QTableWidgetItem("Перекачка продукта"));
 
-    blocksTable->setRowCount(2);
+//     blocksTable->setRowCount(2);
 
-    blocksTable->setItem(0, 0, new QTableWidgetItem("1"));
-    blocksTable->setItem(0, 1, new QTableWidgetItem("Блок сепарации"));
-    blocksTable->setItem(0, 2, new QTableWidgetItem("Описание блока"));
-    blocksTable->setItem(0, 3, new QTableWidgetItem("1.0"));
-    blocksTable->setItem(0, 4, new QTableWidgetItem("Да"));
-    blocksTable->setItem(0, 5, new QTableWidgetItem("920000"));
-    blocksTable->setItem(0, 6, new QTableWidgetItem("20.00"));
-    blocksTable->setItem(0, 7, new QTableWidgetItem("5.90"));
-    blocksTable->setItem(0, 8, new QTableWidgetItem("II"));
+//     blocksTable->setItem(0, 0, new QTableWidgetItem("1"));
+//     blocksTable->setItem(0, 1, new QTableWidgetItem("Блок сепарации"));
+//     blocksTable->setItem(0, 2, new QTableWidgetItem("Описание блока"));
+//     blocksTable->setItem(0, 3, new QTableWidgetItem("1.0"));
+//     blocksTable->setItem(0, 4, new QTableWidgetItem("Да"));
+//     blocksTable->setItem(0, 5, new QTableWidgetItem("920000"));
+//     blocksTable->setItem(0, 6, new QTableWidgetItem("20.00"));
+//     blocksTable->setItem(0, 7, new QTableWidgetItem("5.90"));
+//     blocksTable->setItem(0, 8, new QTableWidgetItem("II"));
 
-    blocksTable->setItem(1, 0, new QTableWidgetItem("2"));
-    blocksTable->setItem(1, 1, new QTableWidgetItem("Блок насосов"));
-    blocksTable->setItem(1, 2, new QTableWidgetItem("Насосное оборудование"));
-    blocksTable->setItem(1, 3, new QTableWidgetItem("1.2"));
-    blocksTable->setItem(1, 4, new QTableWidgetItem("Нет"));
-    blocksTable->setItem(1, 5, new QTableWidgetItem("540000"));
-    blocksTable->setItem(1, 6, new QTableWidgetItem("11.74"));
-    blocksTable->setItem(1, 7, new QTableWidgetItem("4.93"));
-    blocksTable->setItem(1, 8, new QTableWidgetItem("III"));
-}
+//     blocksTable->setItem(1, 0, new QTableWidgetItem("2"));
+//     blocksTable->setItem(1, 1, new QTableWidgetItem("Блок насосов"));
+//     blocksTable->setItem(1, 2, new QTableWidgetItem("Насосное оборудование"));
+//     blocksTable->setItem(1, 3, new QTableWidgetItem("1.2"));
+//     blocksTable->setItem(1, 4, new QTableWidgetItem("Нет"));
+//     blocksTable->setItem(1, 5, new QTableWidgetItem("540000"));
+//     blocksTable->setItem(1, 6, new QTableWidgetItem("11.74"));
+//     blocksTable->setItem(1, 7, new QTableWidgetItem("4.93"));
+//     blocksTable->setItem(1, 8, new QTableWidgetItem("III"));
+// }
 

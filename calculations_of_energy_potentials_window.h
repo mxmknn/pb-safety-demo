@@ -15,19 +15,18 @@ public:
     ~Calculations_Energy_window();
 
 private:
-    QTableWidget *unitsTable;
-    QTableWidget *blocksTable;
+    QTableWidget *unitsTable = nullptr;
+    QTableWidget *blocksTable = nullptr;
 
-    QPushButton *backButton;
-    QPushButton *closeButton;
+    QPushButton *backButton = nullptr;
+    QPushButton *closeButton = nullptr;
 
     void setupUi();
-    // void setupTables();
-    void fillTestData();
 
     QTableWidget *createUnitsTable();
     QTableWidget *createBlocksTable();
-    void moveSelectedRow(QTableWidget *table,int direction);
+
+    void moveSelectedRow(QTableWidget *table, int direction);
 };
 
 #endif
