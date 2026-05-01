@@ -10,15 +10,32 @@
 #include <QHeaderView>
 #include <QSplitter>
 #include <QFont>
+#include <QFile>
+#include <QTextStream>
+#include <QCoreApplication>
+
+static void debugLog(const QString &text)
+{
+    QFile file(QCoreApplication::applicationDirPath() + "/debug_log.txt");
+
+    if (file.open(QIODevice::Append | QIODevice::Text)) {
+        QTextStream out(&file);
+        out << text << "\n";
+    }
+}
 
 Calculations_Energy_window::Calculations_Energy_window(QWidget *parent)
     : QMainWindow(parent)
 {
+    debugLog("1 constructor start");
+
     setupUi();
+
+    debugLog("2 setupUi finished");
+
     setAttribute(Qt::WA_DeleteOnClose);
-}
-Calculations_Energy_window::~Calculations_Energy_window()
-{
+
+    debugLog("3 constructor end");
 }
 
 void Calculations_Energy_window::moveSelectedRow(QTableWidget *table, int direction)
@@ -45,24 +62,38 @@ void Calculations_Energy_window::moveSelectedRow(QTableWidget *table, int direct
 
 QTableWidget *Calculations_Energy_window::createUnitsTable()
 {
+    debugLog("createUnitsTable 1");
+
     QTableWidget *table = new QTableWidget(this);
+
+    debugLog("createUnitsTable 2 after new QTableWidget");
 
     table->setColumnCount(2);
     table->setRowCount(3);
+
+    debugLog("createUnitsTable 3 after rows columns");
 
     table->setHorizontalHeaderLabels({
         "Название установки",
         "Комментарий"
     });
 
+    debugLog("createUnitsTable 4 after headers");
+
     table->setItem(0, 0, new QTableWidgetItem("Аппарат с газовой фазой"));
     table->setItem(0, 1, new QTableWidgetItem("Пример расчета E1"));
+
+    debugLog("createUnitsTable 5 after row 0");
 
     table->setItem(1, 0, new QTableWidgetItem("Демонстрационная установка"));
     table->setItem(1, 1, new QTableWidgetItem("Расчет всех энергий"));
 
+    debugLog("createUnitsTable 6 after row 1");
+
     table->setItem(2, 0, new QTableWidgetItem("Стадия компрессии"));
     table->setItem(2, 1, new QTableWidgetItem("Пример расчета E1"));
+
+    debugLog("createUnitsTable 7 end");
 
     return table;
 }
@@ -180,24 +211,43 @@ QTableWidget *Calculations_Energy_window::createBlocksTable()//нижняя та
 }
 void Calculations_Energy_window::setupUi()
 {
+    debugLog("setupUi 1");
+
     QWidget *central = new QWidget(this);
     setCentralWidget(central);
+
+    debugLog("setupUi 2");
 
     setWindowTitle("Расчеты энергопотенциалов");
     resize(1250, 700);
 
+    debugLog("setupUi 3 before createUnitsTable");
+
     unitsTable = createUnitsTable();
+
+    debugLog("setupUi 4 after createUnitsTable");
 
     QVBoxLayout *mainLayout = new QVBoxLayout(central);
 
+    debugLog("setupUi 5 after layout");
+
     QLabel *label = new QLabel("Установки :", this);
     mainLayout->addWidget(label);
+
+    debugLog("setupUi 6 after label");
+
     mainLayout->addWidget(unitsTable);
+
+    debugLog("setupUi 7 after unitsTable addWidget");
 
     closeButton = new QPushButton("Закрыть", this);
     mainLayout->addWidget(closeButton);
 
+    debugLog("setupUi 8 after closeButton");
+
     connect(closeButton, &QPushButton::clicked, this, &Calculations_Energy_window::close);
+
+    debugLog("setupUi 9 end");
 }
 // void Calculations_Energy_window::setupUi()
 // {
