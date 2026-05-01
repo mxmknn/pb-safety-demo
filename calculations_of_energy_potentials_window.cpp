@@ -198,34 +198,37 @@ void Calculations_Energy_window::moveSelectedRow(QTableView *table, QStandardIte
 {
     if (!table || !model) return;
 
-    const QModelIndex index = table->currentIndex();
+    QModelIndex index = table->currentIndex();
     if (!index.isValid()) return;
 
-    const int row = index.row();
-    const int targetRow = row + direction;
+    int row = index.row();
+    int targetRow = row + direction;
 
     if (targetRow < 0 || targetRow >= model->rowCount()) return;
 
-    QList<QStandardItem *> currentItems;
-    QList<QStandardItem *> targetItems;
-
-    currentItems.reserve(model->columnCount());
-    targetItems.reserve(model->columnCount());
-
     for (int col = 0; col < model->columnCount(); ++col) {
-        QStandardItem *currentItem = model->takeItem(row, col);
-        QStandardItem *targetItem = model->takeItem(targetRow, col);
+        QStandardItem *currentItem = model->item(row, col);
+        QStandardItem *targetItem = model->item(targetRow, col);
 
-        currentItems.append(currentItem ? currentItem : new QStandardItem(""));
-        targetItems.append(targetItem ? targetItem : new QStandardItem(""));
-    }
+        QString currentText = currentItem ? currentItem->text() : "";
+        QString targetText = targetItem ? targetItem->text() : "";
 
-    for (int col = 0; col < model->columnCount(); ++col) {
-        model->setItem(row, col, targetItems[col]);
-        model->setItem(targetRow, col, currentItems[col]);
+        if (!currentItem) {
+            currentItem = new QStandardItem("");
+            model->setItem(row, col, currentItem);
+        }
+
+        if (!targetItem) {
+            targetItem = new QStandardItem("");
+            model->setItem(targetRow, col, targetItem);
+        }
+
+        currentItem->setText(targetText);
+        targetItem->setText(currentText);
     }
 
     table->selectRow(targetRow);
+    table->setCurrentIndex(model->index(targetRow, 0));
 }
 
 void Calculations_Energy_window::buildInterface()
