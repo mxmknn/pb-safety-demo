@@ -94,17 +94,17 @@ void MainWindow::setupUi()
     menuLayout->addStretch();
 
     central->setLayout(menuLayout);
-    connect(calculationsButton, &QPushButton::clicked, this, [this]() {
-        setWindowTitle("Нажата кнопка расчетов");
-    });
+    // connect(calculationsButton, &QPushButton::clicked, this, [this]() {
+    //     setWindowTitle("Нажата кнопка расчетов");
+    // });
 
-    connect(directoriesButton, &QPushButton::clicked, this, [this]() {
-        setWindowTitle("Нажата кнопка справочников");
-    });
+    // connect(directoriesButton, &QPushButton::clicked, this, [this]() {
+    //     setWindowTitle("Нажата кнопка справочников");
+    // });
 
-    connect(settingsButton, &QPushButton::clicked, this, [this]() {
-        setWindowTitle("Нажата кнопка настроек");
-    });
+    // connect(settingsButton, &QPushButton::clicked, this, [this]() {
+    //     setWindowTitle("Нажата кнопка настроек");
+    // });
 
     // connect(helpButton, &QPushButton::clicked, this, [this]() {
     //     setWindowTitle("Нажата кнопка помощи");
