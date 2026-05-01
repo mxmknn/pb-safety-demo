@@ -26,6 +26,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(pb-safety
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        calculations_of_energy_potentials_window.h
+        calculations_of_energy_potentials_window.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET pb-safety APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -74,4 +76,24 @@ install(TARGETS pb-safety
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(pb-safety)
+    cmake_minimum_required(VERSION 3.16)
+
+    project(pb_safety VERSION 0.1 LANGUAGES CXX)
+
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+    find_package(Qt6 REQUIRED COMPONENTS Widgets)
+
+    qt_standard_project_setup()
+
+    qt_add_executable(pb_safety
+        main.cpp
+        mainwindow.h
+        mainwindow.cpp
+        calculations_of_energy_potentials_window.cpp
+        calculations_of_energy_potentials_window.h
+    )
+
+    target_link_libraries(pb_safety PRIVATE Qt6::Widgets)
 endif()

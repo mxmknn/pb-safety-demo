@@ -2,12 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-
-QT_BEGIN_NAMESPACE
-namespace Ui {
-class MainWindow;
-}
-QT_END_NAMESPACE
+class Calculations_Energy_window;
+class QPushButton;
 
 class MainWindow : public QMainWindow
 {
@@ -15,9 +11,19 @@ class MainWindow : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow() override;
+    ~MainWindow();
 
 private:
-    Ui::MainWindow *ui;
+    QPushButton *calculationsButton;
+    QPushButton *directoriesButton;
+    QPushButton *settingsButton;
+    QPushButton *helpButton;
+    QPushButton *exitButton;
+
+    Calculations_Energy_window *calculations_energy_Window;
+
+    void setupUi();
+    void openCalculations_energy_Window();
 };
+
 #endif // MAINWINDOW_H

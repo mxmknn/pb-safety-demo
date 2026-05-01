@@ -1,14 +1,105 @@
 #include "mainwindow.h"
-#include "./ui_mainwindow.h"
+#include "calculations_of_energy_potentials_window.h"
+
+#include <QWidget>
+#include <QPushButton>
+#include <QLabel>
+#include <QVBoxLayout>
+#include <QMessageBox>
+#include <QFont>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
 {
-    ui->setupUi(this);
+    setupUi();
 }
 
 MainWindow::~MainWindow()
 {
-    delete ui;
+}
+
+void MainWindow::openCalculations_energy_Window()//открытие окна с расчетами
+{
+    calculations_energy_Window = new Calculations_Energy_window(this);
+    calculations_energy_Window->show();
+
+    this->hide();
+
+    connect(calculations_energy_Window, &QObject::destroyed, this, [this]() {
+        this->show();
+        calculations_energy_Window = nullptr;
+    });
+}
+
+void MainWindow::setupUi()
+{
+    QWidget *central = new QWidget(this);
+    setCentralWidget(central);
+
+    setWindowTitle("ПВ-БЕЗОПАСНОСТЬ");
+    resize(600, 420);
+
+    QLabel *titleLabel = new QLabel("ПВ-БЕЗОПАСНОСТЬ", this);
+    titleLabel->setAlignment(Qt::AlignCenter);
+
+    QFont titleFont;
+    titleFont.setPointSize(22);
+    titleFont.setBold(true);
+    titleLabel->setFont(titleFont);
+
+    QLabel *subtitleLabel = new QLabel("Главное меню", this);
+    subtitleLabel->setAlignment(Qt::AlignCenter);
+
+    QFont subtitleFont;
+    subtitleFont.setPointSize(14);
+    subtitleLabel->setFont(subtitleFont);
+
+    calculationsButton = new QPushButton("Расчеты энергопотенциалов и категорий взрывоопасности", this);
+    directoriesButton = new QPushButton("Справочники", this);
+    settingsButton = new QPushButton("Настройки", this);
+    helpButton = new QPushButton("Помощь", this);
+    exitButton = new QPushButton("Выход", this);
+
+    calculationsButton->setMinimumHeight(45);
+    directoriesButton->setMinimumHeight(45);
+    settingsButton->setMinimumHeight(45);
+    helpButton->setMinimumHeight(45);
+    exitButton->setMinimumHeight(45);
+
+    calculationsButton->setMinimumWidth(480);
+    directoriesButton->setMinimumWidth(480);
+    settingsButton->setMinimumWidth(480);
+    helpButton->setMinimumWidth(480);
+    exitButton->setMinimumWidth(480);
+
+    QVBoxLayout *menuLayout = new QVBoxLayout;
+    menuLayout->addStretch();
+    menuLayout->addWidget(titleLabel);
+    menuLayout->addSpacing(10);
+    menuLayout->addWidget(subtitleLabel);
+    menuLayout->addSpacing(30);
+    menuLayout->addWidget(calculationsButton, 0, Qt::AlignCenter);
+    menuLayout->addWidget(directoriesButton, 0, Qt::AlignCenter);
+    menuLayout->addWidget(settingsButton, 0, Qt::AlignCenter);
+    menuLayout->addWidget(helpButton, 0, Qt::AlignCenter);
+    menuLayout->addWidget(exitButton, 0, Qt::AlignCenter);
+    menuLayout->addStretch();
+
+    central->setLayout(menuLayout);
+
+    connect(exitButton, &QPushButton::clicked, this, &MainWindow::close);
+
+    connect(calculationsButton, &QPushButton::clicked, this, &MainWindow::openCalculations_energy_Window);
+
+    connect(directoriesButton, &QPushButton::clicked, this, [this]() {
+        QMessageBox::information(this, "Справочники", "Раздел справочников пока не реализован.");
+    });
+
+    connect(settingsButton, &QPushButton::clicked, this, [this]() {
+        QMessageBox::information(this, "Настройки", "Раздел настроек пока не реализован.");
+    });
+
+    connect(helpButton, &QPushButton::clicked, this, [this]() {
+        QMessageBox::information(this, "Помощь", "Раздел помощи пока не реализован.");
+    });
 }
