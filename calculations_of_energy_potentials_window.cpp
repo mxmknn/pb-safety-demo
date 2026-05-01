@@ -10,7 +10,7 @@
 #include <QStandardItem>
 #include <QHeaderView>
 #include <QAbstractItemView>
-#include <QItemSelectionModel>
+#include <QModelIndex>
 
 Calculations_Energy_window::Calculations_Energy_window(QWidget *parent)
     : QMainWindow(parent)
@@ -37,7 +37,6 @@ void Calculations_Energy_window::createUnitsTable()
     unitsModel->setItem(2, 1, new QStandardItem("Пример расчета E1"));
 
     unitsTable->setModel(unitsModel);
-
     unitsTable->verticalHeader()->setVisible(false);
     unitsTable->horizontalHeader()->setStretchLastSection(true);
 
@@ -73,7 +72,6 @@ void Calculations_Energy_window::createBlocksTable()
     blocksModel->setItem(0, 8, new QStandardItem("Да"));
 
     blocksTable->setModel(blocksModel);
-
     blocksTable->verticalHeader()->setVisible(false);
 
     blocksTable->setColumnWidth(0, 260);
@@ -94,35 +92,42 @@ void Calculations_Energy_window::createBlocksTable()
 
 void Calculations_Energy_window::addUnitRow()
 {
-    const int row = unitsModel->rowCount();
+    int row = unitsModel->rowCount();
 
     unitsModel->insertRow(row);
     unitsModel->setItem(row, 0, new QStandardItem("Новая установка"));
     unitsModel->setItem(row, 1, new QStandardItem("Комментарий"));
 
     unitsTable->selectRow(row);
+    unitsTable->setCurrentIndex(unitsModel->index(row, 0));
 }
 
 void Calculations_Energy_window::deleteSelectedUnitRow()
 {
-    const QModelIndex index = unitsTable->currentIndex();
+    QModelIndex index = unitsTable->currentIndex();
     if (!index.isValid()) return;
 
-    unitsModel->removeRow(index.row());
+    int row = index.row();
+    unitsModel->removeRow(row);
 
     if (unitsModel->rowCount() > 0) {
-        const int row = qMin(index.row(), unitsModel->rowCount() - 1);
-        unitsTable->selectRow(row);
+        int nextRow = row;
+        if (nextRow >= unitsModel->rowCount()) {
+            nextRow = unitsModel->rowCount() - 1;
+        }
+
+        unitsTable->selectRow(nextRow);
+        unitsTable->setCurrentIndex(unitsModel->index(nextRow, 0));
     }
 }
 
 void Calculations_Energy_window::copySelectedUnitRow()
 {
-    const QModelIndex index = unitsTable->currentIndex();
+    QModelIndex index = unitsTable->currentIndex();
     if (!index.isValid()) return;
 
-    const int sourceRow = index.row();
-    const int newRow = unitsModel->rowCount();
+    int sourceRow = index.row();
+    int newRow = unitsModel->rowCount();
 
     unitsModel->insertRow(newRow);
 
@@ -137,11 +142,12 @@ void Calculations_Energy_window::copySelectedUnitRow()
     }
 
     unitsTable->selectRow(newRow);
+    unitsTable->setCurrentIndex(unitsModel->index(newRow, 0));
 }
 
 void Calculations_Energy_window::addBlockRow()
 {
-    const int row = blocksModel->rowCount();
+    int row = blocksModel->rowCount();
 
     blocksModel->insertRow(row);
 
@@ -156,28 +162,35 @@ void Calculations_Energy_window::addBlockRow()
     blocksModel->setItem(row, 8, new QStandardItem("Нет"));
 
     blocksTable->selectRow(row);
+    blocksTable->setCurrentIndex(blocksModel->index(row, 0));
 }
 
 void Calculations_Energy_window::deleteSelectedBlockRow()
 {
-    const QModelIndex index = blocksTable->currentIndex();
+    QModelIndex index = blocksTable->currentIndex();
     if (!index.isValid()) return;
 
-    blocksModel->removeRow(index.row());
+    int row = index.row();
+    blocksModel->removeRow(row);
 
     if (blocksModel->rowCount() > 0) {
-        const int row = qMin(index.row(), blocksModel->rowCount() - 1);
-        blocksTable->selectRow(row);
+        int nextRow = row;
+        if (nextRow >= blocksModel->rowCount()) {
+            nextRow = blocksModel->rowCount() - 1;
+        }
+
+        blocksTable->selectRow(nextRow);
+        blocksTable->setCurrentIndex(blocksModel->index(nextRow, 0));
     }
 }
 
 void Calculations_Energy_window::copySelectedBlockRow()
 {
-    const QModelIndex index = blocksTable->currentIndex();
+    QModelIndex index = blocksTable->currentIndex();
     if (!index.isValid()) return;
 
-    const int sourceRow = index.row();
-    const int newRow = blocksModel->rowCount();
+    int sourceRow = index.row();
+    int newRow = blocksModel->rowCount();
 
     blocksModel->insertRow(newRow);
 
@@ -192,43 +205,24 @@ void Calculations_Energy_window::copySelectedBlockRow()
     }
 
     blocksTable->selectRow(newRow);
+    blocksTable->setCurrentIndex(blocksModel->index(newRow, 0));
 }
 
-void Calculations_Energy_window::moveSelectedRow(QTableView *table, QStandardItemModel *model, int direction)
+void Calculations_Energy_window::moveSelectedRow(QTableView *table,
+                                                 QStandardItemModel *model,
+                                                 int direction)
 {
     if (!table || !model) return;
 
     QModelIndex index = table->currentIndex();
-    if (!index.isValid()) return;
 
-    int row = index.row();
-    int targetRow = row + direction;
+    int currentRow = index.isValid() ? index.row() : 0;
+    int newRow = currentRow + direction;
 
-    if (targetRow < 0 || targetRow >= model->rowCount()) return;
+    if (newRow < 0 || newRow >= model->rowCount()) return;
 
-    for (int col = 0; col < model->columnCount(); ++col) {
-        QStandardItem *currentItem = model->item(row, col);
-        QStandardItem *targetItem = model->item(targetRow, col);
-
-        QString currentText = currentItem ? currentItem->text() : "";
-        QString targetText = targetItem ? targetItem->text() : "";
-
-        if (!currentItem) {
-            currentItem = new QStandardItem("");
-            model->setItem(row, col, currentItem);
-        }
-
-        if (!targetItem) {
-            targetItem = new QStandardItem("");
-            model->setItem(targetRow, col, targetItem);
-        }
-
-        currentItem->setText(targetText);
-        targetItem->setText(currentText);
-    }
-
-    table->selectRow(targetRow);
-    table->setCurrentIndex(model->index(targetRow, 0));
+    table->selectRow(newRow);
+    table->setCurrentIndex(model->index(newRow, 0));
 }
 
 void Calculations_Energy_window::buildInterface()
@@ -292,9 +286,14 @@ void Calculations_Energy_window::buildInterface()
     mainLayout->addStretch();
     mainLayout->addLayout(bottomLayout);
 
-    connect(unitAddButton, &QPushButton::clicked, this, &Calculations_Energy_window::addUnitRow);
-    connect(unitDeleteButton, &QPushButton::clicked, this, &Calculations_Energy_window::deleteSelectedUnitRow);
-    connect(unitCopyButton, &QPushButton::clicked, this, &Calculations_Energy_window::copySelectedUnitRow);
+    connect(unitAddButton, &QPushButton::clicked,
+            this, &Calculations_Energy_window::addUnitRow);
+
+    connect(unitDeleteButton, &QPushButton::clicked,
+            this, &Calculations_Energy_window::deleteSelectedUnitRow);
+
+    connect(unitCopyButton, &QPushButton::clicked,
+            this, &Calculations_Energy_window::copySelectedUnitRow);
 
     connect(unitUpButton, &QPushButton::clicked, this, [this]() {
         moveSelectedRow(unitsTable, unitsModel, -1);
@@ -304,9 +303,14 @@ void Calculations_Energy_window::buildInterface()
         moveSelectedRow(unitsTable, unitsModel, 1);
     });
 
-    connect(blockAddButton, &QPushButton::clicked, this, &Calculations_Energy_window::addBlockRow);
-    connect(blockDeleteButton, &QPushButton::clicked, this, &Calculations_Energy_window::deleteSelectedBlockRow);
-    connect(blockCopyButton, &QPushButton::clicked, this, &Calculations_Energy_window::copySelectedBlockRow);
+    connect(blockAddButton, &QPushButton::clicked,
+            this, &Calculations_Energy_window::addBlockRow);
+
+    connect(blockDeleteButton, &QPushButton::clicked,
+            this, &Calculations_Energy_window::deleteSelectedBlockRow);
+
+    connect(blockCopyButton, &QPushButton::clicked,
+            this, &Calculations_Energy_window::copySelectedBlockRow);
 
     connect(blockUpButton, &QPushButton::clicked, this, [this]() {
         moveSelectedRow(blocksTable, blocksModel, -1);
@@ -316,5 +320,6 @@ void Calculations_Energy_window::buildInterface()
         moveSelectedRow(blocksTable, blocksModel, 1);
     });
 
-    connect(closeButton, &QPushButton::clicked, this, &Calculations_Energy_window::close);
+    connect(closeButton, &QPushButton::clicked,
+            this, &Calculations_Energy_window::close);
 }
