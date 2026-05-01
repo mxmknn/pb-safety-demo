@@ -31,11 +31,9 @@ private:
     void addUnitRow();
     void deleteSelectedUnitRow();
     void copySelectedUnitRow();
-
     void addBlockRow();
     void deleteSelectedBlockRow();
     void copySelectedBlockRow();
-
     void selectRowByDirection(QTableView *table, QStandardItemModel *model, int direction);
 };
 

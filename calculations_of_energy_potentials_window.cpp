@@ -5,7 +5,6 @@
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QGridLayout>
 #include <QTableView>
 #include <QStandardItemModel>
 #include <QStandardItem>
@@ -55,13 +54,11 @@ void Calculations_Energy_window::createUnitsTable()
     unitsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     unitsTable->setSelectionMode(QAbstractItemView::SingleSelection);
     unitsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    unitsTable->setFocusPolicy(Qt::StrongFocus);
 
     unitsTable->setColumnWidth(0, 520);
     unitsTable->setColumnWidth(1, 420);
     unitsTable->setFixedHeight(190);
-
-    unitsTable->selectRow(0);
-    unitsTable->setCurrentIndex(unitsModel->index(0, 0));
 }
 
 void Calculations_Energy_window::createBlocksTable()
@@ -98,6 +95,7 @@ void Calculations_Energy_window::createBlocksTable()
     blocksTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     blocksTable->setSelectionMode(QAbstractItemView::SingleSelection);
     blocksTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    blocksTable->setFocusPolicy(Qt::StrongFocus);
 
     blocksTable->setColumnWidth(0, 360);
     blocksTable->setColumnWidth(1, 70);
@@ -110,9 +108,6 @@ void Calculations_Energy_window::createBlocksTable()
     blocksTable->setColumnWidth(8, 80);
 
     blocksTable->setFixedHeight(200);
-
-    blocksTable->selectRow(0);
-    blocksTable->setCurrentIndex(blocksModel->index(0, 0));
 }
 
 void Calculations_Energy_window::addUnitRow()
@@ -123,7 +118,6 @@ void Calculations_Energy_window::addUnitRow()
     unitsModel->setItem(row, 0, new QStandardItem("Новая установка"));
     unitsModel->setItem(row, 1, new QStandardItem("Комментарий"));
 
-    unitsTable->selectRow(row);
     unitsTable->setCurrentIndex(unitsModel->index(row, 0));
 }
 
@@ -141,7 +135,6 @@ void Calculations_Energy_window::deleteSelectedUnitRow()
             nextRow = unitsModel->rowCount() - 1;
         }
 
-        unitsTable->selectRow(nextRow);
         unitsTable->setCurrentIndex(unitsModel->index(nextRow, 0));
     }
 }
@@ -161,7 +154,6 @@ void Calculations_Energy_window::copySelectedUnitRow()
         unitsModel->setItem(newRow, col, sourceItem ? sourceItem->clone() : new QStandardItem(""));
     }
 
-    unitsTable->selectRow(newRow);
     unitsTable->setCurrentIndex(unitsModel->index(newRow, 0));
 }
 
@@ -181,7 +173,6 @@ void Calculations_Energy_window::addBlockRow()
     blocksModel->setItem(row, 7, new QStandardItem("0"));
     blocksModel->setItem(row, 8, new QStandardItem("☐"));
 
-    blocksTable->selectRow(row);
     blocksTable->setCurrentIndex(blocksModel->index(row, 0));
 }
 
@@ -199,7 +190,6 @@ void Calculations_Energy_window::deleteSelectedBlockRow()
             nextRow = blocksModel->rowCount() - 1;
         }
 
-        blocksTable->selectRow(nextRow);
         blocksTable->setCurrentIndex(blocksModel->index(nextRow, 0));
     }
 }
@@ -219,7 +209,6 @@ void Calculations_Energy_window::copySelectedBlockRow()
         blocksModel->setItem(newRow, col, sourceItem ? sourceItem->clone() : new QStandardItem(""));
     }
 
-    blocksTable->selectRow(newRow);
     blocksTable->setCurrentIndex(blocksModel->index(newRow, 0));
 }
 
@@ -236,7 +225,6 @@ void Calculations_Energy_window::selectRowByDirection(QTableView *table,
 
     if (newRow < 0 || newRow >= model->rowCount()) return;
 
-    table->selectRow(newRow);
     table->setCurrentIndex(model->index(newRow, 0));
 }
 
@@ -394,6 +382,16 @@ void Calculations_Energy_window::buildInterface()
         "    gridline-color: #d0d0d0;"
         "    selection-background-color: black;"
         "    selection-color: white;"
+        "}"
+
+        "QTableView::item:selected {"
+        "    background-color: black;"
+        "    color: white;"
+        "}"
+
+        "QTableView::item:selected:!active {"
+        "    background-color: black;"
+        "    color: white;"
         "}"
 
         "QHeaderView::section {"
