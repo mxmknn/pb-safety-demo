@@ -1,0 +1,73 @@
+name: Windows Release
+on:
+
+  workflow_dispatch:
+
+  push:
+
+    branches: [ main ]
+
+jobs:
+
+  build-windows:
+
+    runs-on: windows-2022
+
+    steps:
+
+      - name: Checkout
+
+        uses: actions/checkout@v4
+
+      - name: Install Qt
+
+        uses: jurplel/install-qt-action@v4
+
+        with:
+
+          version: '6.8.3'
+
+          host: 'windows'
+
+          target: 'desktop'
+
+          arch: 'win64_mingw'
+
+      - name: Configure CMake
+
+        shell: cmd
+
+        run: |
+
+          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+
+        shell: cmd
+
+        run: |
+
+          cmake --build build --config Release
+
+      - name: Deploy Qt DLLs
+
+        shell: cmd
+
+        run: |
+
+          mkdir package
+
+          for /r build %%f in (pb-safety.exe) do copy "%%f" package\
+
+          windeployqt package\pb-safety.exe
+
+      - name: Upload artifact
+
+        uses: actions/upload-artifact@v4
+
+        with:
+
+          name: pb-safety-windows-release
+
+          path: package
+
