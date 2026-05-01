@@ -25,6 +25,16 @@ private:
     void buildInterface();
     void createUnitsTable();
     void createBlocksTable();
+
+    void addUnitRow();
+    void deleteSelectedUnitRow();
+    void copySelectedUnitRow();
+
+    void addBlockRow();
+    void deleteSelectedBlockRow();
+    void copySelectedBlockRow();
+
+    void moveSelectedRow(QTableView *table, QStandardItemModel *model, int direction);
 };
 
 #endif
