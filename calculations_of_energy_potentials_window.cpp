@@ -198,7 +198,8 @@ void Calculations_Energy_window::setupUi()
     mainLayout->addWidget(closeButton);
 
     connect(closeButton, &QPushButton::clicked, this, &Calculations_Energy_window::close);
-}void Calculations_Energy_window::setupUi()
+}
+// void Calculations_Energy_window::setupUi()
 // {
 //     QWidget *central = new QWidget(this);
 //     setCentralWidget(central);
@@ -479,5 +480,3 @@ void Calculations_Energy_window::setupUi()
 //         "}"
 //         );
 // }
-
-
