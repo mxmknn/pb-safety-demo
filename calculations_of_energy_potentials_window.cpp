@@ -23,30 +23,24 @@ Calculations_Energy_window::~Calculations_Energy_window()
 
 void Calculations_Energy_window::moveSelectedRow(QTableWidget *table, int direction)
 {
-    int currentRow = table->currentRow();
-    if (currentRow < 0) return;
+    if (!table) return;
 
-    int newRow = currentRow + direction;
+    int row = table->currentRow();
+    if (row < 0) return;
 
-    if (newRow < 0 || newRow >= table->rowCount()) return;
-
-    table->insertRow(newRow);
-
-    int sourceRow = currentRow;
-
-    if (direction < 0) {
-        sourceRow = currentRow + 1;
-    }
+    int targetRow = row + direction;
+    if (targetRow < 0 || targetRow >= table->rowCount()) return;
 
     for (int col = 0; col < table->columnCount(); ++col) {
-        QTableWidgetItem *item = table->takeItem(sourceRow, col);
-        table->setItem(newRow, col, item);
+        QTableWidgetItem *currentItem = table->takeItem(row, col);
+        QTableWidgetItem *targetItem = table->takeItem(targetRow, col);
+
+        table->setItem(row, col, targetItem);
+        table->setItem(targetRow, col, currentItem);
     }
 
-    table->removeRow(sourceRow);
-
-    table->selectRow(newRow);
-    table->setCurrentCell(newRow, 0);
+    table->selectRow(targetRow);
+    table->setCurrentCell(targetRow, 0);
 }
 
 QTableWidget *Calculations_Energy_window::createUnitsTable()//табличка верхняя
@@ -282,200 +276,166 @@ void Calculations_Energy_window::setupUi()
 
     connect(closeButton, &QPushButton::clicked, this, &Calculations_Energy_window::close);
 
-    connect(unitAddButton, &QPushButton::clicked, this, [this]() {
-        int row = unitsTable->rowCount();
-        unitsTable->insertRow(row);
-        unitsTable->setItem(row, 0, new QTableWidgetItem("Новая установка"));
-        unitsTable->setItem(row, 1, new QTableWidgetItem("Комментарий"));
-        unitsTable->selectRow(row);
-    });
+    // connect(unitAddButton, &QPushButton::clicked, this, [this]() {
+    //     int row = unitsTable->rowCount();
+    //     unitsTable->insertRow(row);
+    //     unitsTable->setItem(row, 0, new QTableWidgetItem("Новая установка"));
+    //     unitsTable->setItem(row, 1, new QTableWidgetItem("Комментарий"));
+    //     unitsTable->selectRow(row);
+    // });
 
-    connect(unitDeleteButton, &QPushButton::clicked, this, [this]() {
-        int row = unitsTable->currentRow();
-        if (row >= 0) {
-            unitsTable->removeRow(row);
-        }
-    });
+    // connect(unitDeleteButton, &QPushButton::clicked, this, [this]() {
+    //     int row = unitsTable->currentRow();
+    //     if (row >= 0) {
+    //         unitsTable->removeRow(row);
+    //     }
+    // });
 
-    connect(unitCopyButton, &QPushButton::clicked, this, [this]() {
-        int row = unitsTable->currentRow();
-        if (row < 0) return;
+    // connect(unitCopyButton, &QPushButton::clicked, this, [this]() {
+    //     int row = unitsTable->currentRow();
+    //     if (row < 0) return;
 
-        int newRow = unitsTable->rowCount();
-        unitsTable->insertRow(newRow);
+    //     int newRow = unitsTable->rowCount();
+    //     unitsTable->insertRow(newRow);
 
-        for (int col = 0; col < unitsTable->columnCount(); ++col) {
-            QTableWidgetItem *oldItem = unitsTable->item(row, col);
-            if (oldItem) {
-                unitsTable->setItem(newRow, col, oldItem->clone());
-            }
-        }
+    //     for (int col = 0; col < unitsTable->columnCount(); ++col) {
+    //         QTableWidgetItem *oldItem = unitsTable->item(row, col);
+    //         if (oldItem) {
+    //             unitsTable->setItem(newRow, col, oldItem->clone());
+    //         }
+    //     }
 
-        unitsTable->selectRow(newRow);
-    });
+    //     unitsTable->selectRow(newRow);
+    // });
 
-    connect(blockAddButton, &QPushButton::clicked, this, [this]() {
-        int row = blocksTable->rowCount();
-        blocksTable->insertRow(row);
+    // connect(blockAddButton, &QPushButton::clicked, this, [this]() {
+    //     int row = blocksTable->rowCount();
+    //     blocksTable->insertRow(row);
 
-        blocksTable->setItem(row, 0, new QTableWidgetItem("Новый блок"));
-        blocksTable->setItem(row, 1, new QTableWidgetItem("0,1"));
+    //     blocksTable->setItem(row, 0, new QTableWidgetItem("Новый блок"));
+    //     blocksTable->setItem(row, 1, new QTableWidgetItem("0,1"));
 
-        QTableWidgetItem *toxicItem = new QTableWidgetItem();
-        toxicItem->setFlags(toxicItem->flags() | Qt::ItemIsUserCheckable);
-        toxicItem->setCheckState(Qt::Unchecked);
-        blocksTable->setItem(row, 2, toxicItem);
+    //     QTableWidgetItem *toxicItem = new QTableWidgetItem();
+    //     toxicItem->setFlags(toxicItem->flags() | Qt::ItemIsUserCheckable);
+    //     toxicItem->setCheckState(Qt::Unchecked);
+    //     blocksTable->setItem(row, 2, toxicItem);
 
-        blocksTable->setItem(row, 3, new QTableWidgetItem("2"));
-        blocksTable->setItem(row, 4, new QTableWidgetItem("0"));
-        blocksTable->setItem(row, 5, new QTableWidgetItem("0"));
-        blocksTable->setItem(row, 6, new QTableWidgetItem("0"));
-        blocksTable->setItem(row, 7, new QTableWidgetItem("0"));
+    //     blocksTable->setItem(row, 3, new QTableWidgetItem("2"));
+    //     blocksTable->setItem(row, 4, new QTableWidgetItem("0"));
+    //     blocksTable->setItem(row, 5, new QTableWidgetItem("0"));
+    //     blocksTable->setItem(row, 6, new QTableWidgetItem("0"));
+    //     blocksTable->setItem(row, 7, new QTableWidgetItem("0"));
 
-        QTableWidgetItem *zoneItem = new QTableWidgetItem();
-        zoneItem->setFlags(zoneItem->flags() | Qt::ItemIsUserCheckable);
-        zoneItem->setCheckState(Qt::Unchecked);
-        blocksTable->setItem(row, 8, zoneItem);
+    //     QTableWidgetItem *zoneItem = new QTableWidgetItem();
+    //     zoneItem->setFlags(zoneItem->flags() | Qt::ItemIsUserCheckable);
+    //     zoneItem->setCheckState(Qt::Unchecked);
+    //     blocksTable->setItem(row, 8, zoneItem);
 
-        blocksTable->selectRow(row);
-    });
+    //     blocksTable->selectRow(row);
+    // });
 
-    connect(blockDeleteButton, &QPushButton::clicked, this, [this]() {
-        int row = blocksTable->currentRow();
-        if (row >= 0) {
-            blocksTable->removeRow(row);
-        }
-    });
+    // connect(blockDeleteButton, &QPushButton::clicked, this, [this]() {
+    //     int row = blocksTable->currentRow();
+    //     if (row >= 0) {
+    //         blocksTable->removeRow(row);
+    //     }
+    // });
 
-    connect(blockCopyButton, &QPushButton::clicked, this, [this]() {
-        int row = blocksTable->currentRow();
-        if (row < 0) return;
+    // connect(blockCopyButton, &QPushButton::clicked, this, [this]() {
+    //     int row = blocksTable->currentRow();
+    //     if (row < 0) return;
 
-        int newRow = blocksTable->rowCount();
-        blocksTable->insertRow(newRow);
+    //     int newRow = blocksTable->rowCount();
+    //     blocksTable->insertRow(newRow);
 
-        for (int col = 0; col < blocksTable->columnCount(); ++col) {
-            QTableWidgetItem *oldItem = blocksTable->item(row, col);
-            if (oldItem) {
-                blocksTable->setItem(newRow, col, oldItem->clone());
-            }
-        }
+    //     for (int col = 0; col < blocksTable->columnCount(); ++col) {
+    //         QTableWidgetItem *oldItem = blocksTable->item(row, col);
+    //         if (oldItem) {
+    //             blocksTable->setItem(newRow, col, oldItem->clone());
+    //         }
+    //     }
 
-        blocksTable->selectRow(newRow);
-    });
-    //движение по таблицам вверх и вниз
-    connect(unitUpButton, &QPushButton::clicked, this, [this]() {
-        moveSelectedRow(unitsTable, -1);
-    });
+    //     blocksTable->selectRow(newRow);
+    // });
+    // //движение по таблицам вверх и вниз
+    // connect(unitUpButton, &QPushButton::clicked, this, [this]() {
+    //     moveSelectedRow(unitsTable, -1);
+    // });
 
-    connect(unitDownButton, &QPushButton::clicked, this, [this]() {
-        moveSelectedRow(unitsTable, 1);
-    });
+    // connect(unitDownButton, &QPushButton::clicked, this, [this]() {
+    //     moveSelectedRow(unitsTable, 1);
+    // });
 
-    connect(blockUpButton, &QPushButton::clicked, this, [this]() {
-        moveSelectedRow(blocksTable, -1);
-    });
+    // connect(blockUpButton, &QPushButton::clicked, this, [this]() {
+    //     moveSelectedRow(blocksTable, -1);
+    // });
 
-    connect(blockDownButton, &QPushButton::clicked, this, [this]() {
-        moveSelectedRow(blocksTable, 1);
-    });
+    // connect(blockDownButton, &QPushButton::clicked, this, [this]() {
+    //     moveSelectedRow(blocksTable, 1);
+    // });
 
-    // setStyleSheet(
-    //     "QMainWindow, QWidget {"
-    //     "    background-color: #efefef;"
-    //     "    font-family: Arial;"
-    //     "    font-size: 14px;"
-    //     "}"
+    setStyleSheet(
+        "QMainWindow, QWidget {"
+        "    background-color: #efefef;"
+        "    font-family: Arial;"
+        "    font-size: 14px;"
+        "}"
 
-    //     "QLabel {"
-    //     "    color: black;"
-    //     "}"
+        "QLabel {"
+        "    color: black;"
+        "}"
 
-    //     "QTableWidget {"
-    //     "    background-color: white;"
-    //     "    alternate-background-color: white;"
-    //     "    gridline-color: #c8c8c8;"
-    //     "    color: black;"
-    //     "    border: 1px solid #b0b0b0;"
-    //     "    selection-background-color: black;"
-    //     "    selection-color: white;"
-    //     "}"
+        "QTableWidget {"
+        "    background-color: white;"
+        "    alternate-background-color: white;"
+        "    gridline-color: #c8c8c8;"
+        "    color: black;"
+        "    border: 1px solid #b0b0b0;"
+        "    selection-background-color: black;"
+        "    selection-color: white;"
+        "}"
 
-    //     "QHeaderView::section {"
-    //     "    background-color: #f5f5f5;"
-    //     "    color: black;"
-    //     "    border: 1px solid #c0c0c0;"
-    //     "    padding: 4px;"
-    //     "    font-weight: bold;"
-    //     "}"
+        "QHeaderView::section {"
+        "    background-color: #f5f5f5;"
+        "    color: black;"
+        "    border: 1px solid #c0c0c0;"
+        "    padding: 4px;"
+        "    font-weight: bold;"
+        "}"
 
-    //     "QTableWidget::item {"
-    //     "    padding: 2px;"
-    //     "}"
+        "QTableWidget::item {"
+        "    padding: 2px;"
+        "}"
 
-    //     "QTableWidget::item:selected {"
-    //     "    background-color: black;"
-    //     "    color: white;"
-    //     "}"
+        "QTableWidget::item:selected {"
+        "    background-color: black;"
+        "    color: white;"
+        "}"
 
-    //     "QPushButton {"
-    //     "    background-color: #f2f2f2;"
-    //     "    color: black;"
-    //     "    border: 1px solid #9f9f9f;"
-    //     "    padding: 5px 14px;"
-    //     "}"
+        "QPushButton {"
+        "    background-color: #f2f2f2;"
+        "    color: black;"
+        "    border: 1px solid #9f9f9f;"
+        "    padding: 5px 14px;"
+        "}"
 
-    //     "QPushButton:hover {"
-    //     "    background-color: #e1e1e1;"
-    //     "}"
+        "QPushButton:hover {"
+        "    background-color: #e1e1e1;"
+        "}"
 
-    //     "QPushButton:pressed {"
-    //     "    background-color: #d0d0d0;"
-    //     "}"
+        "QPushButton:pressed {"
+        "    background-color: #d0d0d0;"
+        "}"
 
-    //     "QPushButton:disabled {"
-    //     "    color: #888888;"
-    //     "    background-color: #dddddd;"
-    //     "}"
+        "QPushButton:disabled {"
+        "    color: #888888;"
+        "    background-color: #dddddd;"
+        "}"
 
-    //     "QPushButton[text=\"Закрыть\"], QPushButton[text=\"Отчёт\"] {"
-    //     "    font-weight: bold;"
-    //     "}"
-    //     );
+        "QPushButton[text=\"Закрыть\"], QPushButton[text=\"Отчёт\"] {"
+        "    font-weight: bold;"
+        "}"
+        );
 }
 
-// void Calculations_Energy_window::fillTestData()
-// {
-//     unitsTable->setRowCount(2);
-
-//     unitsTable->setItem(0, 0, new QTableWidgetItem("1"));
-//     unitsTable->setItem(0, 1, new QTableWidgetItem("Установка подготовки газа"));
-//     unitsTable->setItem(0, 2, new QTableWidgetItem("Основная установка"));
-
-//     unitsTable->setItem(1, 0, new QTableWidgetItem("2"));
-//     unitsTable->setItem(1, 1, new QTableWidgetItem("Насосная станция"));
-//     unitsTable->setItem(1, 2, new QTableWidgetItem("Перекачка продукта"));
-
-//     blocksTable->setRowCount(2);
-
-//     blocksTable->setItem(0, 0, new QTableWidgetItem("1"));
-//     blocksTable->setItem(0, 1, new QTableWidgetItem("Блок сепарации"));
-//     blocksTable->setItem(0, 2, new QTableWidgetItem("Описание блока"));
-//     blocksTable->setItem(0, 3, new QTableWidgetItem("1.0"));
-//     blocksTable->setItem(0, 4, new QTableWidgetItem("Да"));
-//     blocksTable->setItem(0, 5, new QTableWidgetItem("920000"));
-//     blocksTable->setItem(0, 6, new QTableWidgetItem("20.00"));
-//     blocksTable->setItem(0, 7, new QTableWidgetItem("5.90"));
-//     blocksTable->setItem(0, 8, new QTableWidgetItem("II"));
-
-//     blocksTable->setItem(1, 0, new QTableWidgetItem("2"));
-//     blocksTable->setItem(1, 1, new QTableWidgetItem("Блок насосов"));
-//     blocksTable->setItem(1, 2, new QTableWidgetItem("Насосное оборудование"));
-//     blocksTable->setItem(1, 3, new QTableWidgetItem("1.2"));
-//     blocksTable->setItem(1, 4, new QTableWidgetItem("Нет"));
-//     blocksTable->setItem(1, 5, new QTableWidgetItem("540000"));
-//     blocksTable->setItem(1, 6, new QTableWidgetItem("11.74"));
-//     blocksTable->setItem(1, 7, new QTableWidgetItem("4.93"));
-//     blocksTable->setItem(1, 8, new QTableWidgetItem("III"));
-// }
 
