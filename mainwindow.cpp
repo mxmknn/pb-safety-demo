@@ -108,9 +108,9 @@ void MainWindow::setupUi()
     // });
     connect(exitButton, &QPushButton::clicked, this, &MainWindow::close);
 
-//     connect(calculationsButton, &QPushButton::clicked, this, &MainWindow::openCalculations_energy_Window);
+    connect(calculationsButton, &QPushButton::clicked, this, &MainWindow::openCalculations_energy_Window);
 
-    connect(helpButton, &QPushButton::clicked, this, [this]() {
+    connect(directoriesButton, &QPushButton::clicked, this, [this]() {
         QMessageBox msgBox(this);
         msgBox.setWindowTitle("Справочники");
         msgBox.setText("Раздел справочники пока не реализован.");
@@ -119,7 +119,7 @@ void MainWindow::setupUi()
         msgBox.exec();
     });
 
-    connect(helpButton, &QPushButton::clicked, this, [this]() {
+    connect(settingsButton, &QPushButton::clicked, this, [this]() {
         QMessageBox msgBox(this);
         msgBox.setWindowTitle("Настройки");
         msgBox.setText("Раздел настройки пока не реализован.");
