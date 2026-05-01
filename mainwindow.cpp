@@ -110,10 +110,10 @@ void MainWindow::setupUi()
         setWindowTitle("Нажата кнопка помощи");
     });
 
-    connect(exitButton, &QPushButton::clicked, this, [this]() {
-        setWindowTitle("Нажата кнопка выхода");
-    });
-//     connect(exitButton, &QPushButton::clicked, this, &MainWindow::close);
+    // connect(exitButton, &QPushButton::clicked, this, [this]() {
+    //     setWindowTitle("Нажата кнопка выхода");
+    // });
+    connect(exitButton, &QPushButton::clicked, this, &MainWindow::close);
 
 //     connect(calculationsButton, &QPushButton::clicked, this, &MainWindow::openCalculations_energy_Window);
 
