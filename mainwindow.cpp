@@ -20,6 +20,13 @@ MainWindow::~MainWindow()
 
 void MainWindow::openCalculations_energy_Window()
 {
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle("Тест");
+    msgBox.setText("Функция открытия окна вызвана");
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.exec();
+
     calculations_energy_Window = new Calculations_Energy_window();
     calculations_energy_Window->setAttribute(Qt::WA_DeleteOnClose);
 
@@ -28,7 +35,7 @@ void MainWindow::openCalculations_energy_Window()
         this->show();
     });
 
-    this->hide();
+    // this->hide();
     calculations_energy_Window->show();
 }
 
@@ -108,8 +115,8 @@ void MainWindow::setupUi()
     // });
     connect(exitButton, &QPushButton::clicked, this, &MainWindow::close);
 
-    connect(calculationsButton, &QPushButton::clicked, this, &MainWindow::openCalculations_energy_Window);
-
+    connect(calculationsButton, &QPushButton::clicked,
+            this, &MainWindow::openCalculations_energy_Window);
     connect(directoriesButton, &QPushButton::clicked, this, [this]() {
         QMessageBox msgBox(this);
         msgBox.setWindowTitle("Справочники");
