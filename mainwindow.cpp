@@ -30,13 +30,13 @@ void MainWindow::openCalculations_energy_Window()
     calculations_energy_Window = new Calculations_Energy_window();
     calculations_energy_Window->setAttribute(Qt::WA_DeleteOnClose);
 
-    this->hide();
-    calculations_energy_Window->show();
-
     connect(calculations_energy_Window, &QObject::destroyed, this, [this]() {
         calculations_energy_Window = nullptr;
         this->show();
     });
+
+    this->hide();
+    calculations_energy_Window->show();
 }
 
 void MainWindow::setupUi()
