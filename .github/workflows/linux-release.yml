@@ -21,17 +21,18 @@ jobs:
 
       - name: Install dependencies
 
-      - name: Install dependencies
-       
         run: |
+
           sudo apt update
+
           sudo apt install -y build-essential cmake git qtbase5-dev qttools5-dev qttools5-dev-tools
-     
+
       - name: Configure CMake
-     
+
         run: |
+
           cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release -DQT_DEFAULT_MAJOR_VERSION=5
-     
+
       - name: Build
 
         run: |
@@ -45,8 +46,6 @@ jobs:
           mkdir -p package
 
           cp build-release/pb-safety package/
-
-          cp -r build-release/*.qm package/ 2>/dev/null || true
 
           chmod +x package/pb-safety
 
