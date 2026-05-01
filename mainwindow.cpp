@@ -94,20 +94,38 @@ void MainWindow::setupUi()
     menuLayout->addStretch();
 
     central->setLayout(menuLayout);
-
-    connect(exitButton, &QPushButton::clicked, this, &MainWindow::close);
-
-    connect(calculationsButton, &QPushButton::clicked, this, &MainWindow::openCalculations_energy_Window);
+    connect(calculationsButton, &QPushButton::clicked, this, [this]() {
+        setWindowTitle("Нажата кнопка расчетов");
+    });
 
     connect(directoriesButton, &QPushButton::clicked, this, [this]() {
-        QMessageBox::information(this, "Справочники", "Раздел справочников пока не реализован.");
+        setWindowTitle("Нажата кнопка справочников");
     });
 
     connect(settingsButton, &QPushButton::clicked, this, [this]() {
-        QMessageBox::information(this, "Настройки", "Раздел настроек пока не реализован.");
+        setWindowTitle("Нажата кнопка настроек");
     });
 
     connect(helpButton, &QPushButton::clicked, this, [this]() {
-        QMessageBox::information(this, "Помощь", "Раздел помощи пока не реализован.");
+        setWindowTitle("Нажата кнопка помощи");
     });
+
+    connect(exitButton, &QPushButton::clicked, this, [this]() {
+        setWindowTitle("Нажата кнопка выхода");
+    });
+//     connect(exitButton, &QPushButton::clicked, this, &MainWindow::close);
+
+//     connect(calculationsButton, &QPushButton::clicked, this, &MainWindow::openCalculations_energy_Window);
+
+//     connect(directoriesButton, &QPushButton::clicked, this, [this]() {
+//         QMessageBox::information(this, "Справочники", "Раздел справочников пока не реализован.");
+//     });
+
+//     connect(settingsButton, &QPushButton::clicked, this, [this]() {
+//         QMessageBox::information(this, "Настройки", "Раздел настроек пока не реализован.");
+//     });
+
+//     connect(helpButton, &QPushButton::clicked, this, [this]() {
+//         QMessageBox::information(this, "Помощь", "Раздел помощи пока не реализован.");
+//     });
 }
