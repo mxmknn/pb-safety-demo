@@ -20,7 +20,7 @@ private:
     QPushButton *helpButton;
     QPushButton *exitButton;
 
-    Calculations_Energy_window *calculations_energy_Window;
+    Calculations_Energy_window *calculations_energy_Window = nullptr;
 
     void setupUi();
     void openCalculations_energy_Window();

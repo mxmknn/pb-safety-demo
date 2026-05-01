@@ -18,16 +18,24 @@ MainWindow::~MainWindow()
 {
 }
 
-void MainWindow::openCalculations_energy_Window()//открытие окна с расчетами
+void MainWindow::openCalculations_energy_Window()
 {
-    calculations_energy_Window = new Calculations_Energy_window(this);
-    calculations_energy_Window->show();
+    if (calculations_energy_Window) {
+        calculations_energy_Window->show();
+        calculations_energy_Window->raise();
+        calculations_energy_Window->activateWindow();
+        return;
+    }
+
+    calculations_energy_Window = new Calculations_Energy_window();
+    calculations_energy_Window->setAttribute(Qt::WA_DeleteOnClose);
 
     this->hide();
+    calculations_energy_Window->show();
 
     connect(calculations_energy_Window, &QObject::destroyed, this, [this]() {
-        this->show();
         calculations_energy_Window = nullptr;
+        this->show();
     });
 }
 
