@@ -1,0 +1,63 @@
+name: Linux Release
+on:
+
+  workflow_dispatch:
+
+  push:
+
+    branches: [ main ]
+
+jobs:
+
+  build-linux:
+
+    runs-on: ubuntu-22.04
+
+    steps:
+
+      - name: Checkout
+
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+
+        run: |
+
+          sudo apt update
+
+          sudo apt install -y build-essential cmake git qt6-base-dev qt6-tools-dev qt6-tools-dev-tools
+
+      - name: Configure CMake
+
+        run: |
+
+          cmake -S . -B build-release -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+
+        run: |
+
+          cmake --build build-release --parallel
+
+      - name: Package files
+
+        run: |
+
+          mkdir -p package
+
+          cp build-release/pb-safety package/
+
+          cp -r build-release/*.qm package/ 2>/dev/null || true
+
+          chmod +x package/pb-safety
+
+      - name: Upload artifact
+
+        uses: actions/upload-artifact@v4
+
+        with:
+
+          name: pb-safety-linux-release
+
+          path: package
+
