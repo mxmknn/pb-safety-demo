@@ -14,7 +14,9 @@ public:
 
 private:
     QPushButton *closeButton = nullptr;
+
     QTableWidget *unitsTable = nullptr;
+    QTableWidget *blocksTable = nullptr;
 
     void buildInterface();
 };
