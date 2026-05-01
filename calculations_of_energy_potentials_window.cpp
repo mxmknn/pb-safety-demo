@@ -52,21 +52,8 @@ void Calculations_Energy_window::buildInterface()
     QLabel *blocksLabel = new QLabel("Блоки :", this);
 
     blocksTable = new QTableWidget(this);
-    blocksTable->setColumnCount(2);
+    blocksTable->setColumnCount(1);
     blocksTable->setRowCount(1);
-
-    blocksTable->setHorizontalHeaderLabels({
-        "Название блока",
-        "Комментарий"
-    });
-
-    blocksTable->setItem(0, 0, new QTableWidgetItem("Аппарат с газовой фазой"));
-    blocksTable->setItem(0, 1, new QTableWidgetItem("Тест"));
-
-    blocksTable->verticalHeader()->setVisible(false);
-    blocksTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    blocksTable->setSelectionMode(QAbstractItemView::SingleSelection);
-    blocksTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     closeButton = new QPushButton("Закрыть", this);
 
