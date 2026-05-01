@@ -20,13 +20,6 @@ MainWindow::~MainWindow()
 
 void MainWindow::openCalculations_energy_Window()
 {
-    if (calculations_energy_Window) {
-        calculations_energy_Window->show();
-        calculations_energy_Window->raise();
-        calculations_energy_Window->activateWindow();
-        return;
-    }
-
     calculations_energy_Window = new Calculations_Energy_window();
     calculations_energy_Window->setAttribute(Qt::WA_DeleteOnClose);
 

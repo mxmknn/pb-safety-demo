@@ -2,8 +2,9 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QPushButton>
+
 class Calculations_Energy_window;
-class QPushButton;
 
 class MainWindow : public QMainWindow
 {
@@ -14,11 +15,11 @@ public:
     ~MainWindow();
 
 private:
-    QPushButton *calculationsButton;
-    QPushButton *directoriesButton;
-    QPushButton *settingsButton;
-    QPushButton *helpButton;
-    QPushButton *exitButton;
+    QPushButton *calculationsButton = nullptr;
+    QPushButton *directoriesButton = nullptr;
+    QPushButton *settingsButton = nullptr;
+    QPushButton *helpButton = nullptr;
+    QPushButton *exitButton = nullptr;
 
     Calculations_Energy_window *calculations_energy_Window = nullptr;
 
@@ -26,4 +27,4 @@ private:
     void openCalculations_energy_Window();
 };
 
-#endif // MAINWINDOW_H
+#endif
