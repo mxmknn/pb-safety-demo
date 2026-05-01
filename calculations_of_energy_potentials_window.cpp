@@ -62,38 +62,21 @@ void Calculations_Energy_window::moveSelectedRow(QTableWidget *table, int direct
 
 QTableWidget *Calculations_Energy_window::createUnitsTable()
 {
-    debugLog("createUnitsTable 1");
+    debugLog("createUnitsTable 1 entered");
 
     QTableWidget *table = new QTableWidget(this);
 
-    debugLog("createUnitsTable 2 after new QTableWidget");
+    debugLog("createUnitsTable 2 after new");
 
     table->setColumnCount(2);
-    table->setRowCount(3);
+    table->setRowCount(1);
 
-    debugLog("createUnitsTable 3 after rows columns");
+    debugLog("createUnitsTable 3 after size");
 
-    table->setHorizontalHeaderLabels({
-        "Название установки",
-        "Комментарий"
-    });
+    table->setItem(0, 0, new QTableWidgetItem("Тест"));
+    table->setItem(0, 1, new QTableWidgetItem("Тест"));
 
-    debugLog("createUnitsTable 4 after headers");
-
-    table->setItem(0, 0, new QTableWidgetItem("Аппарат с газовой фазой"));
-    table->setItem(0, 1, new QTableWidgetItem("Пример расчета E1"));
-
-    debugLog("createUnitsTable 5 after row 0");
-
-    table->setItem(1, 0, new QTableWidgetItem("Демонстрационная установка"));
-    table->setItem(1, 1, new QTableWidgetItem("Расчет всех энергий"));
-
-    debugLog("createUnitsTable 6 after row 1");
-
-    table->setItem(2, 0, new QTableWidgetItem("Стадия компрессии"));
-    table->setItem(2, 1, new QTableWidgetItem("Пример расчета E1"));
-
-    debugLog("createUnitsTable 7 end");
+    debugLog("createUnitsTable 4 end");
 
     return table;
 }
@@ -211,12 +194,12 @@ QTableWidget *Calculations_Energy_window::createBlocksTable()//нижняя та
 }
 void Calculations_Energy_window::setupUi()
 {
-    debugLog("setupUi 1");
+    debugLog("setupUi 1 entered");
 
     QWidget *central = new QWidget(this);
     setCentralWidget(central);
 
-    debugLog("setupUi 2");
+    debugLog("setupUi 2 central created");
 
     setWindowTitle("Расчеты энергопотенциалов");
     resize(1250, 700);
@@ -228,26 +211,15 @@ void Calculations_Energy_window::setupUi()
     debugLog("setupUi 4 after createUnitsTable");
 
     QVBoxLayout *mainLayout = new QVBoxLayout(central);
-
-    debugLog("setupUi 5 after layout");
-
-    QLabel *label = new QLabel("Установки :", this);
-    mainLayout->addWidget(label);
-
-    debugLog("setupUi 6 after label");
-
+    mainLayout->addWidget(new QLabel("Установки :", this));
     mainLayout->addWidget(unitsTable);
-
-    debugLog("setupUi 7 after unitsTable addWidget");
 
     closeButton = new QPushButton("Закрыть", this);
     mainLayout->addWidget(closeButton);
 
-    debugLog("setupUi 8 after closeButton");
-
     connect(closeButton, &QPushButton::clicked, this, &Calculations_Energy_window::close);
 
-    debugLog("setupUi 9 end");
+    debugLog("setupUi 5 end");
 }
 // void Calculations_Energy_window::setupUi()
 // {
