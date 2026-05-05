@@ -16,8 +16,6 @@ jobs:
         include:
           - os: ubuntu-22.04
             platform: linux
-            host: linux
-            arch: gcc_64
             artifact_name: pb-safety-linux-release
           - os: macos-14
             platform: macos
@@ -34,7 +32,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Qt
+      - name: Install Qt (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            qt6-base-dev \
+            qt6-base-dev-tools \
+            qt6-tools-dev \
+            qt6-tools-dev-tools
+
+      - name: Install Qt (macOS/Windows)
+        if: runner.os != 'Linux'
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.8.3'
