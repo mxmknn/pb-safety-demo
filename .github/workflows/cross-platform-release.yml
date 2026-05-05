@@ -87,8 +87,13 @@ jobs:
           mkdir -p package/pb-safety
           cp build/pb-safety package/pb-safety/
           cp start.sh package/pb-safety/
-          chmod +x package/pb-safety/pb-safety package/pb-safety/start.sh
-          zip -r pb-safety-linux-release.zip package/pb-safety
+          cp install_redos_shortcut.sh package/pb-safety/
+          cp PVB_DB.db package/pb-safety/
+          chmod +x package/pb-safety/pb-safety package/pb-safety/start.sh package/pb-safety/install_redos_shortcut.sh
+          (
+            cd package
+            zip -r ../pb-safety-linux-release.zip pb-safety
+          )
 
       - name: Package (macOS)
         if: runner.os == 'macOS'
