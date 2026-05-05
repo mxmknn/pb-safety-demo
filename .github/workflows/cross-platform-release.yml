@@ -41,10 +41,9 @@ jobs:
             build-essential \
             cmake \
             ninja-build \
-            qt6-base-dev \
-            qt6-base-dev-tools \
-            qt6-tools-dev \
-            qt6-tools-dev-tools
+            qtbase5-dev \
+            qttools5-dev \
+            qttools5-dev-tools
 
       - name: Install Qt (macOS/Windows)
         if: runner.os != 'Linux'
@@ -56,8 +55,15 @@ jobs:
           arch: ${{ matrix.arch }}
           cache: true
 
-      - name: Configure & Build (Linux/macOS)
-        if: runner.os != 'Windows'
+      - name: Configure & Build (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DQT_DEFAULT_MAJOR_VERSION=5
+          cmake --build build --parallel
+
+      - name: Configure & Build (macOS)
+        if: runner.os == 'macOS'
         shell: bash
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
