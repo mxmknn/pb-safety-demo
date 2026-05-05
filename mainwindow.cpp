@@ -5,7 +5,6 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QVBoxLayout>
-#include <QMessageBox>
 #include <QFont>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -61,9 +60,9 @@ void MainWindow::setupUi()
     subtitleLabel->setFont(subtitleFont);
 
     calculationsButton = new QPushButton("Расчеты энергопотенциалов и категорий взрывоопасности", this);
-    directoriesButton = new QPushButton("Справочники", this);
-    settingsButton = new QPushButton("Настройки", this);
-    helpButton = new QPushButton("Помощь", this);
+    directoriesButton = new QPushButton("Справочники (следующий этап)", this);
+    settingsButton = new QPushButton("Настройки (следующий этап)", this);
+    helpButton = new QPushButton("Помощь (следующий этап)", this);
     exitButton = new QPushButton("Выход", this);
 
     calculationsButton->setMinimumHeight(45);
@@ -115,30 +114,8 @@ void MainWindow::setupUi()
 
     connect(calculationsButton, &QPushButton::clicked,
             this, &MainWindow::openCalculations_energy_Window);
-    connect(directoriesButton, &QPushButton::clicked, this, [this]() {
-        QMessageBox msgBox(this);
-        msgBox.setWindowTitle("Справочники");
-        msgBox.setText("Раздел справочники пока не реализован.");
-        msgBox.setIcon(QMessageBox::Information);
-        msgBox.setStandardButtons(QMessageBox::Ok);
-        msgBox.exec();
-    });
 
-    connect(settingsButton, &QPushButton::clicked, this, [this]() {
-        QMessageBox msgBox(this);
-        msgBox.setWindowTitle("Настройки");
-        msgBox.setText("Раздел настройки пока не реализован.");
-        msgBox.setIcon(QMessageBox::Information);
-        msgBox.setStandardButtons(QMessageBox::Ok);
-        msgBox.exec();
-    });
-
-    connect(helpButton, &QPushButton::clicked, this, [this]() {
-        QMessageBox msgBox(this);
-        msgBox.setWindowTitle("Помощь");
-        msgBox.setText("Раздел помощи пока не реализован.");
-        msgBox.setIcon(QMessageBox::Information);
-        msgBox.setStandardButtons(QMessageBox::Ok);
-        msgBox.exec();
-    });
+    directoriesButton->setEnabled(false);
+    settingsButton->setEnabled(false);
+    helpButton->setEnabled(false);
 }
