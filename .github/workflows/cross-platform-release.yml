@@ -32,18 +32,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Restore ccache (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-linux-${{ github.ref_name }}-${{ hashFiles('CMakeLists.txt', '**/*.h', '**/*.cpp', '**/*.ui') }}
+          restore-keys: |
+            ccache-linux-${{ github.ref_name }}-
+            ccache-linux-
+
       - name: Install Qt (Linux)
         if: runner.os == 'Linux'
         shell: bash
         run: |
           sudo apt update
-          sudo apt install -y \
-            build-essential \
-            cmake \
-            ninja-build \
+          sudo apt install -y --no-install-recommends \
             qtbase5-dev \
-            qttools5-dev \
-            qttools5-dev-tools
+            ninja-build \
+            zip \
+            ccache
 
       - name: Install Qt (macOS/Windows)
         if: runner.os != 'Linux'
@@ -59,8 +67,11 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DQT_DEFAULT_MAJOR_VERSION=5
+          ccache --max-size=500M
+          ccache --show-stats
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DQT_DEFAULT_MAJOR_VERSION=5 -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build --parallel
+          ccache --show-stats
 
       - name: Configure & Build (macOS)
         if: runner.os == 'macOS'
@@ -73,10 +84,11 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          mkdir -p package
-          cp build/pb-safety package/
-          chmod +x package/pb-safety
-          tar -czf pb-safety-linux-release.tar.gz -C package .
+          mkdir -p package/pb-safety
+          cp build/pb-safety package/pb-safety/
+          cp start.sh package/pb-safety/
+          chmod +x package/pb-safety/pb-safety package/pb-safety/start.sh
+          zip -r pb-safety-linux-release.zip package/pb-safety
 
       - name: Package (macOS)
         if: runner.os == 'macOS'
@@ -112,7 +124,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: pb-safety-linux-release.tar.gz
+          path: pb-safety-linux-release.zip
 
       - name: Upload artifact (macOS)
         if: runner.os == 'macOS'
