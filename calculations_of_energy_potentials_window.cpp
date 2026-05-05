@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSignalBlocker>
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlQuery>
@@ -17,6 +18,20 @@
 #include <QVariant>
 #include <QVBoxLayout>
 #include <QWidget>
+
+namespace {
+constexpr auto kMainConnectionName = "pb_safety_main";
+
+QString boolToYesNo(bool value)
+{
+    return value ? QStringLiteral("Да") : QStringLiteral("Нет");
+}
+
+QString notCalculated()
+{
+    return QStringLiteral("-");
+}
+}
 
 Calculations_Energy_window::Calculations_Energy_window(QWidget *parent)
     : QMainWindow(parent)
@@ -37,227 +52,349 @@ QPushButton *Calculations_Energy_window::createButton(const QString &text, int w
 void Calculations_Energy_window::createUnitsTable()
 {
     unitsTable = new QTableView(this);
-    unitsModel = new QStandardItemModel(0, 2, unitsTable);
+    unitsModel = new QStandardItemModel(0, UnitColumnCount, unitsTable);
 
-    unitsModel->setHeaderData(0, Qt::Horizontal, "Название установки");
-    unitsModel->setHeaderData(1, Qt::Horizontal, "Комментарий");
+    unitsModel->setHeaderData(UnitNameColumn, Qt::Horizontal, "Название установки");
+    unitsModel->setHeaderData(UnitCommentColumn, Qt::Horizontal, "Комментарий");
 
     unitsTable->setModel(unitsModel);
-
     unitsTable->verticalHeader()->setVisible(false);
     unitsTable->horizontalHeader()->setStretchLastSection(true);
     unitsTable->horizontalHeader()->setFixedHeight(26);
-
     unitsTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     unitsTable->setSelectionMode(QAbstractItemView::SingleSelection);
     unitsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     unitsTable->setFocusPolicy(Qt::StrongFocus);
-
-    unitsTable->setColumnWidth(0, 520);
-    unitsTable->setColumnWidth(1, 420);
+    unitsTable->setColumnWidth(UnitNameColumn, 520);
+    unitsTable->setColumnWidth(UnitCommentColumn, 420);
     unitsTable->setFixedHeight(190);
 
-    connect(unitsTable->selectionModel(), &QItemSelectionModel::currentRowChanged, this,
-            [this](const QModelIndex &, const QModelIndex &) {
-                refreshBlocks();
-                updateActionStates();
-            });
+    connect(unitsTable->selectionModel(), &QItemSelectionModel::currentRowChanged,
+            this, &Calculations_Energy_window::onUnitsSelectionChanged);
 }
 
 void Calculations_Energy_window::createBlocksTable()
 {
     blocksTable = new QTableView(this);
-    blocksModel = new QStandardItemModel(0, 9, blocksTable);
+    blocksModel = new QStandardItemModel(0, BlockColumnCount, blocksTable);
 
-    blocksModel->setHeaderData(0, Qt::Horizontal, "Название блока");
-    blocksModel->setHeaderData(1, Qt::Horizontal, "Коэф.\nуч. во\nвзрыве");
-    blocksModel->setHeaderData(2, Qt::Horizontal, "Токсичные,\nвысокотокс\nичные в-ва");
-    blocksModel->setHeaderData(3, Qt::Horizontal, "Кате-\nгория:");
-    blocksModel->setHeaderData(4, Qt::Horizontal, "Полный\nпотен-циал");
-    blocksModel->setHeaderData(5, Qt::Horizontal, "Приведен-\nная масса:");
-    blocksModel->setHeaderData(6, Qt::Horizontal, "Относитель\nный\nпотенциал:");
-    blocksModel->setHeaderData(7, Qt::Horizontal, "Радиус\nRo:");
-    blocksModel->setHeaderData(8, Qt::Horizontal, "Оценка\nзон\nпораж.");
+    blocksModel->setHeaderData(BlockNameColumn, Qt::Horizontal, "Название блока");
+    blocksModel->setHeaderData(BlockKEruptionColumn, Qt::Horizontal, "Коэф.\nуч. во\nвзрыве");
+    blocksModel->setHeaderData(BlockClassColumn, Qt::Horizontal, "Токсичные,\nвысокотокс\nичные в-ва");
+    blocksModel->setHeaderData(BlockCategoryColumn, Qt::Horizontal, "Кате-\nгория:");
+    blocksModel->setHeaderData(BlockTotalEnergyColumn, Qt::Horizontal, "Полный\nпотен-циал");
+    blocksModel->setHeaderData(BlockReducedMassColumn, Qt::Horizontal, "Приведен-\nная масса:");
+    blocksModel->setHeaderData(BlockRelativePotentialColumn, Qt::Horizontal, "Относитель\nный\nпотенциал:");
+    blocksModel->setHeaderData(BlockRadiusColumn, Qt::Horizontal, "Радиус\nRo:");
+    blocksModel->setHeaderData(BlockPrintRColumn, Qt::Horizontal, "Оценка\nзон\nпораж.");
 
     blocksTable->setModel(blocksModel);
-
     blocksTable->verticalHeader()->setVisible(false);
     blocksTable->horizontalHeader()->setFixedHeight(78);
     blocksTable->horizontalHeader()->setDefaultAlignment(Qt::AlignCenter);
-
     blocksTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     blocksTable->setSelectionMode(QAbstractItemView::SingleSelection);
     blocksTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     blocksTable->setFocusPolicy(Qt::StrongFocus);
 
-    blocksTable->setColumnWidth(0, 360);
-    blocksTable->setColumnWidth(1, 70);
-    blocksTable->setColumnWidth(2, 95);
-    blocksTable->setColumnWidth(3, 70);
-    blocksTable->setColumnWidth(4, 100);
-    blocksTable->setColumnWidth(5, 100);
-    blocksTable->setColumnWidth(6, 115);
-    blocksTable->setColumnWidth(7, 75);
-    blocksTable->setColumnWidth(8, 80);
-
+    blocksTable->setColumnWidth(BlockNameColumn, 360);
+    blocksTable->setColumnWidth(BlockKEruptionColumn, 70);
+    blocksTable->setColumnWidth(BlockClassColumn, 95);
+    blocksTable->setColumnWidth(BlockCategoryColumn, 70);
+    blocksTable->setColumnWidth(BlockTotalEnergyColumn, 100);
+    blocksTable->setColumnWidth(BlockReducedMassColumn, 100);
+    blocksTable->setColumnWidth(BlockRelativePotentialColumn, 115);
+    blocksTable->setColumnWidth(BlockRadiusColumn, 75);
+    blocksTable->setColumnWidth(BlockPrintRColumn, 80);
     blocksTable->setFixedHeight(200);
 
-    connect(blocksTable->selectionModel(), &QItemSelectionModel::currentRowChanged, this,
-            [this](const QModelIndex &, const QModelIndex &) {
-                updateActionStates();
-            });
+    connect(blocksTable->selectionModel(), &QItemSelectionModel::currentRowChanged,
+            this, &Calculations_Energy_window::onBlocksSelectionChanged);
 }
 
-bool Calculations_Energy_window::executeQuery(QSqlQuery &query, const QString &actionName)
+void Calculations_Energy_window::onUnitsSelectionChanged()
+{
+    refreshBlocks();
+    updateActionStates();
+}
+
+void Calculations_Energy_window::onBlocksSelectionChanged()
+{
+    updateActionStates();
+}
+
+void Calculations_Energy_window::clearBlocks()
+{
+    blocksModel->removeRows(0, blocksModel->rowCount());
+    blocksTable->clearSelection();
+}
+
+bool Calculations_Energy_window::ensureDatabaseReady(const QString &actionName) const
+{
+    const QSqlDatabase db = QSqlDatabase::database(QString::fromLatin1(kMainConnectionName));
+    if (db.isValid() && db.isOpen()) {
+        return true;
+    }
+
+    QMessageBox::critical(const_cast<Calculations_Energy_window *>(this),
+                          QStringLiteral("Ошибка базы данных"),
+                          QStringLiteral("%1\n\nСоединение с базой данных неактивно.").arg(actionName));
+    return false;
+}
+
+bool Calculations_Energy_window::executeQuery(QSqlQuery &query, const QString &actionName) const
 {
     if (query.exec()) {
         return true;
     }
 
-    QMessageBox::critical(this,
-                          "Ошибка базы данных",
-                          QStringLiteral("%1\n\n%2")
-                              .arg(actionName, query.lastError().text()));
+    QMessageBox::critical(const_cast<Calculations_Energy_window *>(this),
+                          QStringLiteral("Ошибка базы данных"),
+                          QStringLiteral("%1\n\n%2").arg(actionName, query.lastError().text()));
     return false;
+}
+
+bool Calculations_Energy_window::beginTransaction(const QString &actionName, QSqlDatabase &db) const
+{
+    if (db.transaction()) {
+        return true;
+    }
+
+    QMessageBox::critical(const_cast<Calculations_Energy_window *>(this),
+                          QStringLiteral("Ошибка базы данных"),
+                          QStringLiteral("%1\n\nНе удалось начать транзакцию.").arg(actionName));
+    return false;
+}
+
+bool Calculations_Energy_window::commitTransaction(const QString &actionName, QSqlDatabase &db) const
+{
+    if (db.commit()) {
+        return true;
+    }
+
+    db.rollback();
+    QMessageBox::critical(const_cast<Calculations_Energy_window *>(this),
+                          QStringLiteral("Ошибка базы данных"),
+                          QStringLiteral("%1\n\nНе удалось завершить транзакцию.").arg(actionName));
+    return false;
+}
+
+void Calculations_Energy_window::rollbackTransaction(QSqlDatabase &db) const
+{
+    db.rollback();
+}
+
+int Calculations_Energy_window::findRowById(const QStandardItemModel *model, qint64 id) const
+{
+    if (!model || id < 0) {
+        return -1;
+    }
+
+    for (int row = 0; row < model->rowCount(); ++row) {
+        const QStandardItem *item = model->item(row, 0);
+        if (item && item->data(IdRole).toLongLong() == id) {
+            return row;
+        }
+    }
+
+    return -1;
+}
+
+qint64 Calculations_Energy_window::selectedId(const QTableView *table, const QStandardItemModel *model) const
+{
+    if (!table || !model) {
+        return -1;
+    }
+
+    const QModelIndex current = table->currentIndex();
+    if (!current.isValid()) {
+        return -1;
+    }
+
+    const QStandardItem *item = model->item(current.row(), 0);
+    return item ? item->data(IdRole).toLongLong() : -1;
+}
+
+int Calculations_Energy_window::selectedIndexValue(const QTableView *table, const QStandardItemModel *model) const
+{
+    if (!table || !model) {
+        return -1;
+    }
+
+    const QModelIndex current = table->currentIndex();
+    if (!current.isValid()) {
+        return -1;
+    }
+
+    const QStandardItem *item = model->item(current.row(), 0);
+    return item ? item->data(IndexRole).toInt() : -1;
+}
+
+void Calculations_Energy_window::selectRow(QTableView *table, QStandardItemModel *model, int row) const
+{
+    if (!table || !model || row < 0 || row >= model->rowCount()) {
+        return;
+    }
+
+    table->setCurrentIndex(model->index(row, 0));
 }
 
 qint64 Calculations_Energy_window::selectedUnitId() const
 {
-    if (!unitsTable || !unitsModel) {
-        return -1;
-    }
-
-    const QModelIndex index = unitsTable->currentIndex();
-    if (!index.isValid()) {
-        return -1;
-    }
-
-    const QStandardItem *item = unitsModel->item(index.row(), 0);
-    return item ? item->data(IdRole).toLongLong() : -1;
+    return selectedId(unitsTable, unitsModel);
 }
 
 qint64 Calculations_Energy_window::selectedBlockId() const
 {
-    if (!blocksTable || !blocksModel) {
-        return -1;
-    }
-
-    const QModelIndex index = blocksTable->currentIndex();
-    if (!index.isValid()) {
-        return -1;
-    }
-
-    const QStandardItem *item = blocksModel->item(index.row(), 0);
-    return item ? item->data(IdRole).toLongLong() : -1;
+    return selectedId(blocksTable, blocksModel);
 }
 
 int Calculations_Energy_window::selectedUnitIndexValue() const
 {
-    if (!unitsTable || !unitsModel) {
-        return -1;
-    }
-
-    const QModelIndex index = unitsTable->currentIndex();
-    if (!index.isValid()) {
-        return -1;
-    }
-
-    const QStandardItem *item = unitsModel->item(index.row(), 0);
-    return item ? item->data(IndexRole).toInt() : -1;
+    return selectedIndexValue(unitsTable, unitsModel);
 }
 
 int Calculations_Energy_window::selectedBlockIndexValue() const
 {
-    if (!blocksTable || !blocksModel) {
-        return -1;
-    }
-
-    const QModelIndex index = blocksTable->currentIndex();
-    if (!index.isValid()) {
-        return -1;
-    }
-
-    const QStandardItem *item = blocksModel->item(index.row(), 0);
-    return item ? item->data(IndexRole).toInt() : -1;
+    return selectedIndexValue(blocksTable, blocksModel);
 }
 
-int Calculations_Energy_window::nextUnitIndex() const
+bool Calculations_Energy_window::nextUnitIndex(QSqlDatabase &db, int *value) const
 {
-    QSqlQuery query;
-    query.prepare("SELECT COALESCE(MAX([Index]), 0) + 1 FROM Unit;");
-    if (!query.exec() || !query.next()) {
-        return 1;
+    QSqlQuery query(db);
+    query.prepare(QStringLiteral("SELECT COALESCE(MAX([Index]), 0) + 1 FROM Unit;"));
+    if (!executeQuery(query, QStringLiteral("Не удалось вычислить следующий индекс установки"))) {
+        return false;
     }
-    return query.value(0).toInt();
+
+    if (!query.next()) {
+        QMessageBox::critical(const_cast<Calculations_Energy_window *>(this),
+                              QStringLiteral("Ошибка базы данных"),
+                              QStringLiteral("Не удалось прочитать следующий индекс установки."));
+        return false;
+    }
+
+    *value = query.value(0).toInt();
+    return true;
 }
 
-int Calculations_Energy_window::nextBlockIndex(qint64 unitId) const
+bool Calculations_Energy_window::nextBlockIndex(QSqlDatabase &db, qint64 unitId, int *value) const
 {
-    QSqlQuery query;
-    query.prepare("SELECT COALESCE(MAX([Index]), 0) + 1 FROM Block WHERE ID_Unit = ?;");
+    QSqlQuery query(db);
+    query.prepare(QStringLiteral("SELECT COALESCE(MAX([Index]), 0) + 1 FROM Block WHERE ID_Unit = ?;"));
     query.addBindValue(unitId);
-    if (!query.exec() || !query.next()) {
-        return 1;
+    if (!executeQuery(query, QStringLiteral("Не удалось вычислить следующий индекс блока"))) {
+        return false;
     }
-    return query.value(0).toInt();
+
+    if (!query.next()) {
+        QMessageBox::critical(const_cast<Calculations_Energy_window *>(this),
+                              QStringLiteral("Ошибка базы данных"),
+                              QStringLiteral("Не удалось прочитать следующий индекс блока."));
+        return false;
+    }
+
+    *value = query.value(0).toInt();
+    return true;
+}
+
+bool Calculations_Energy_window::swapIndexes(const QString &tableName,
+                                              qint64 currentId,
+                                              int currentIndex,
+                                              qint64 neighborId,
+                                              int neighborIndex,
+                                              const QString &actionName)
+{
+    QSqlDatabase db = QSqlDatabase::database(QString::fromLatin1(kMainConnectionName));
+    if (!beginTransaction(actionName, db)) {
+        return false;
+    }
+
+    QSqlQuery updateCurrent(db);
+    updateCurrent.prepare(QStringLiteral("UPDATE %1 SET [Index] = ? WHERE ID = ?;").arg(tableName));
+    updateCurrent.addBindValue(neighborIndex);
+    updateCurrent.addBindValue(currentId);
+    if (!executeQuery(updateCurrent, actionName)) {
+        rollbackTransaction(db);
+        return false;
+    }
+
+    QSqlQuery updateNeighbor(db);
+    updateNeighbor.prepare(QStringLiteral("UPDATE %1 SET [Index] = ? WHERE ID = ?;").arg(tableName));
+    updateNeighbor.addBindValue(currentIndex);
+    updateNeighbor.addBindValue(neighborId);
+    if (!executeQuery(updateNeighbor, actionName)) {
+        rollbackTransaction(db);
+        return false;
+    }
+
+    return commitTransaction(actionName, db);
 }
 
 void Calculations_Energy_window::refreshUnits(qint64 preferredUnitId)
 {
-    qint64 unitIdToSelect = preferredUnitId >= 0 ? preferredUnitId : selectedUnitId();
-
-    unitsModel->removeRows(0, unitsModel->rowCount());
-
-    QSqlQuery query;
-    if (showDeletedUnits) {
-        query.prepare("SELECT ID, iUnitName, iComment, [Index] "
-                      "FROM Unit WHERE [Index] < 0 "
-                      "ORDER BY DeleteDate DESC, ID DESC;");
-    } else {
-        query.prepare("SELECT ID, iUnitName, iComment, [Index] "
-                      "FROM Unit WHERE [Index] >= 0 "
-                      "ORDER BY [Index];");
-    }
-
-    if (!executeQuery(query, "Не удалось загрузить список установок")) {
-        refreshBlocks();
+    if (!ensureDatabaseReady(QStringLiteral("Не удалось обновить список установок"))) {
+        unitsModel->removeRows(0, unitsModel->rowCount());
+        clearBlocks();
         updateActionStates();
         return;
     }
 
-    int rowToSelect = -1;
-    int row = 0;
-    while (query.next()) {
-        const qint64 id = query.value(0).toLongLong();
-        const QString name = query.value(1).toString();
-        const QString comment = query.value(2).toString();
-        const int indexValue = query.value(3).toInt();
+    const qint64 unitIdToSelect = (preferredUnitId >= 0) ? preferredUnitId : selectedUnitId();
 
-        QStandardItem *nameItem = new QStandardItem(name);
-        QStandardItem *commentItem = new QStandardItem(comment);
-        nameItem->setData(id, IdRole);
-        nameItem->setData(indexValue, IndexRole);
+    unitsModel->removeRows(0, unitsModel->rowCount());
 
-        unitsModel->appendRow({nameItem, commentItem});
+    QSqlDatabase db = QSqlDatabase::database(QString::fromLatin1(kMainConnectionName));
+    QSqlQuery query(db);
 
-        if (id == unitIdToSelect) {
-            rowToSelect = row;
-        }
-        ++row;
+    if (showDeletedUnits) {
+        query.prepare(QStringLiteral(
+            "SELECT ID, iUnitName, iComment, [Index] "
+            "FROM Unit WHERE [Index] < 0 "
+            "ORDER BY DeleteDate DESC, ID DESC;"));
+    } else {
+        query.prepare(QStringLiteral(
+            "SELECT ID, iUnitName, iComment, [Index] "
+            "FROM Unit WHERE [Index] >= 0 "
+            "ORDER BY [Index];"));
     }
 
+    if (!executeQuery(query, QStringLiteral("Не удалось загрузить список установок"))) {
+        clearBlocks();
+        updateActionStates();
+        return;
+    }
+
+    while (query.next()) {
+        QStandardItem *nameItem = new QStandardItem(query.value(1).toString());
+        QStandardItem *commentItem = new QStandardItem(query.value(2).toString());
+        nameItem->setData(query.value(0).toLongLong(), IdRole);
+        nameItem->setData(query.value(3).toInt(), IndexRole);
+        unitsModel->appendRow({nameItem, commentItem});
+    }
+
+    int rowToSelect = findRowById(unitsModel, unitIdToSelect);
     if (rowToSelect < 0 && unitsModel->rowCount() > 0) {
         rowToSelect = 0;
     }
 
-    if (rowToSelect >= 0) {
-        unitsTable->setCurrentIndex(unitsModel->index(rowToSelect, 0));
-    } else {
-        refreshBlocks();
+    {
+        QSignalBlocker blocker(unitsTable->selectionModel());
+        if (rowToSelect >= 0) {
+            selectRow(unitsTable, unitsModel, rowToSelect);
+        } else {
+            unitsTable->clearSelection();
+        }
     }
 
     if (unitDeletedButton) {
-        unitDeletedButton->setText(showDeletedUnits ? "Активные" : "Удаленные");
+        unitDeletedButton->setText(showDeletedUnits ? QStringLiteral("Активные") : QStringLiteral("Удаленные"));
+    }
+
+    if (rowToSelect >= 0) {
+        refreshBlocks();
+    } else {
+        clearBlocks();
     }
 
     updateActionStates();
@@ -265,72 +402,70 @@ void Calculations_Energy_window::refreshUnits(qint64 preferredUnitId)
 
 void Calculations_Energy_window::refreshBlocks(qint64 preferredBlockId)
 {
-    qint64 blockIdToSelect = preferredBlockId >= 0 ? preferredBlockId : selectedBlockId();
-
     blocksModel->removeRows(0, blocksModel->rowCount());
 
     const qint64 unitId = selectedUnitId();
     if (unitId < 0) {
+        blocksTable->clearSelection();
         updateActionStates();
         return;
     }
 
-    QSqlQuery query;
-    query.prepare("SELECT ID, iBlock_Name, iK_eruption, [iClass(I_II)_Yes_No], iPrintR, [Index] "
-                  "FROM Block WHERE ID_Unit = ? "
-                  "ORDER BY [Index];");
+    if (!ensureDatabaseReady(QStringLiteral("Не удалось обновить список блоков"))) {
+        updateActionStates();
+        return;
+    }
+
+    const qint64 blockIdToSelect = (preferredBlockId >= 0) ? preferredBlockId : selectedBlockId();
+
+    QSqlDatabase db = QSqlDatabase::database(QString::fromLatin1(kMainConnectionName));
+    QSqlQuery query(db);
+    query.prepare(QStringLiteral(
+        "SELECT ID, iBlock_Name, iK_eruption, [iClass(I_II)_Yes_No], iPrintR, [Index] "
+        "FROM Block WHERE ID_Unit = ? "
+        "ORDER BY [Index];"));
     query.addBindValue(unitId);
 
-    if (!executeQuery(query, "Не удалось загрузить список блоков")) {
+    if (!executeQuery(query, QStringLiteral("Не удалось загрузить список блоков"))) {
         updateActionStates();
         return;
     }
 
-    int rowToSelect = -1;
-    int row = 0;
     while (query.next()) {
         const qint64 id = query.value(0).toLongLong();
         const QString blockName = query.value(1).toString();
-        const QString kEruption = query.value(2).isNull() ? "-" : query.value(2).toString();
+        const QString kEruption = query.value(2).isNull() ? notCalculated() : query.value(2).toString();
         const bool classOneTwo = query.value(3).toBool();
         const bool printRadius = query.value(4).toBool();
         const int indexValue = query.value(5).toInt();
 
         QStandardItem *nameItem = new QStandardItem(blockName);
-        QStandardItem *kItem = new QStandardItem(kEruption);
-        QStandardItem *classItem = new QStandardItem(classOneTwo ? "Да" : "Нет");
-        QStandardItem *categoryItem = new QStandardItem("-");
-        QStandardItem *fullEnergyItem = new QStandardItem("-");
-        QStandardItem *massItem = new QStandardItem("-");
-        QStandardItem *relativeItem = new QStandardItem("-");
-        QStandardItem *radiusItem = new QStandardItem("-");
-        QStandardItem *printItem = new QStandardItem(printRadius ? "Да" : "Нет");
-
         nameItem->setData(id, IdRole);
         nameItem->setData(indexValue, IndexRole);
 
         blocksModel->appendRow({nameItem,
-                                kItem,
-                                classItem,
-                                categoryItem,
-                                fullEnergyItem,
-                                massItem,
-                                relativeItem,
-                                radiusItem,
-                                printItem});
-
-        if (id == blockIdToSelect) {
-            rowToSelect = row;
-        }
-        ++row;
+                                new QStandardItem(kEruption),
+                                new QStandardItem(boolToYesNo(classOneTwo)),
+                                new QStandardItem(notCalculated()),
+                                new QStandardItem(notCalculated()),
+                                new QStandardItem(notCalculated()),
+                                new QStandardItem(notCalculated()),
+                                new QStandardItem(notCalculated()),
+                                new QStandardItem(boolToYesNo(printRadius))});
     }
 
+    int rowToSelect = findRowById(blocksModel, blockIdToSelect);
     if (rowToSelect < 0 && blocksModel->rowCount() > 0) {
         rowToSelect = 0;
     }
 
-    if (rowToSelect >= 0) {
-        blocksTable->setCurrentIndex(blocksModel->index(rowToSelect, 0));
+    {
+        QSignalBlocker blocker(blocksTable->selectionModel());
+        if (rowToSelect >= 0) {
+            selectRow(blocksTable, blocksModel, rowToSelect);
+        } else {
+            blocksTable->clearSelection();
+        }
     }
 
     updateActionStates();
@@ -342,62 +477,62 @@ void Calculations_Energy_window::updateActionStates()
     const bool hasBlock = selectedBlockId() >= 0;
     const bool allowEdits = !showDeletedUnits;
 
-    if (unitAddButton) {
-        unitAddButton->setEnabled(allowEdits);
-    }
-    if (unitDeleteButton) {
-        unitDeleteButton->setEnabled(allowEdits && hasUnit);
-    }
-    if (unitCopyButton) {
-        unitCopyButton->setEnabled(allowEdits && hasUnit);
-    }
-    if (unitUpButton) {
-        unitUpButton->setEnabled(allowEdits && hasUnit);
-    }
-    if (unitDownButton) {
-        unitDownButton->setEnabled(allowEdits && hasUnit);
-    }
+    if (unitAddButton) unitAddButton->setEnabled(allowEdits);
+    if (unitDeleteButton) unitDeleteButton->setEnabled(allowEdits && hasUnit);
+    if (unitCopyButton) unitCopyButton->setEnabled(allowEdits && hasUnit);
+    if (unitUpButton) unitUpButton->setEnabled(allowEdits && hasUnit);
+    if (unitDownButton) unitDownButton->setEnabled(allowEdits && hasUnit);
 
-    if (blockAddButton) {
-        blockAddButton->setEnabled(allowEdits && hasUnit);
-    }
-    if (blockDeleteButton) {
-        blockDeleteButton->setEnabled(allowEdits && hasBlock);
-    }
-    if (blockCopyButton) {
-        blockCopyButton->setEnabled(allowEdits && hasBlock);
-    }
-    if (blockUpButton) {
-        blockUpButton->setEnabled(allowEdits && hasBlock);
-    }
-    if (blockDownButton) {
-        blockDownButton->setEnabled(allowEdits && hasBlock);
-    }
+    if (blockAddButton) blockAddButton->setEnabled(allowEdits && hasUnit);
+    if (blockDeleteButton) blockDeleteButton->setEnabled(allowEdits && hasBlock);
+    if (blockCopyButton) blockCopyButton->setEnabled(allowEdits && hasBlock);
+    if (blockUpButton) blockUpButton->setEnabled(allowEdits && hasBlock);
+    if (blockDownButton) blockDownButton->setEnabled(allowEdits && hasBlock);
 }
 
 void Calculations_Energy_window::showNotImplemented(const QString &actionName)
 {
     QMessageBox::information(this,
-                             "Функция в разработке",
+                             QStringLiteral("Функция в разработке"),
                              QStringLiteral("%1 будет реализовано на следующем этапе.").arg(actionName));
 }
 
 void Calculations_Energy_window::addUnit()
 {
-    QSqlQuery insert;
-    insert.prepare("INSERT INTO Unit (iUnitName, iComment, [Index], DeleteDate) "
-                   "VALUES (?, ?, ?, NULL);");
-    insert.addBindValue(QStringLiteral("Новая установка"));
-    insert.addBindValue(QString());
-    insert.addBindValue(nextUnitIndex());
-
-    if (!executeQuery(insert, "Не удалось добавить установку")) {
+    if (!ensureDatabaseReady(QStringLiteral("Не удалось добавить установку"))) {
         return;
     }
 
-    const qint64 newUnitId = insert.lastInsertId().toLongLong();
-    refreshUnits(newUnitId);
-    showNotImplemented("Редактор установки");
+    QSqlDatabase db = QSqlDatabase::database(QString::fromLatin1(kMainConnectionName));
+    if (!beginTransaction(QStringLiteral("Не удалось добавить установку"), db)) {
+        return;
+    }
+
+    int indexValue = 1;
+    if (!nextUnitIndex(db, &indexValue)) {
+        rollbackTransaction(db);
+        return;
+    }
+
+    QSqlQuery insert(db);
+    insert.prepare(QStringLiteral(
+        "INSERT INTO Unit (iUnitName, iComment, [Index], DeleteDate) "
+        "VALUES (?, ?, ?, NULL);"));
+    insert.addBindValue(QStringLiteral("Новая установка"));
+    insert.addBindValue(QString());
+    insert.addBindValue(indexValue);
+
+    if (!executeQuery(insert, QStringLiteral("Не удалось добавить установку"))) {
+        rollbackTransaction(db);
+        return;
+    }
+
+    if (!commitTransaction(QStringLiteral("Не удалось добавить установку"), db)) {
+        return;
+    }
+
+    refreshUnits(insert.lastInsertId().toLongLong());
+    showNotImplemented(QStringLiteral("Редактор установки"));
 }
 
 void Calculations_Energy_window::deleteSelectedUnit()
@@ -407,10 +542,16 @@ void Calculations_Energy_window::deleteSelectedUnit()
         return;
     }
 
-    QSqlQuery query;
-    query.prepare("UPDATE Unit SET [Index] = -1, DeleteDate = CURRENT_TIMESTAMP WHERE ID = ?;");
+    if (!ensureDatabaseReady(QStringLiteral("Не удалось удалить установку"))) {
+        return;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database(QString::fromLatin1(kMainConnectionName));
+    QSqlQuery query(db);
+    query.prepare(QStringLiteral("UPDATE Unit SET [Index] = -1, DeleteDate = CURRENT_TIMESTAMP WHERE ID = ?;"));
     query.addBindValue(unitId);
-    if (!executeQuery(query, "Не удалось удалить установку")) {
+
+    if (!executeQuery(query, QStringLiteral("Не удалось удалить установку"))) {
         return;
     }
 
@@ -424,73 +565,91 @@ void Calculations_Energy_window::copySelectedUnit()
         return;
     }
 
-    QSqlDatabase db = QSqlDatabase::database();
-    if (!db.transaction()) {
-        QMessageBox::critical(this, "Ошибка базы данных", "Не удалось начать транзакцию копирования.");
+    if (!ensureDatabaseReady(QStringLiteral("Не удалось скопировать установку"))) {
         return;
     }
 
-    QSqlQuery sourceUnit;
-    sourceUnit.prepare("SELECT iUnitName, iComment, iDocuments, iDiscription, TRIAL922 "
-                       "FROM Unit WHERE ID = ?;");
+    QSqlDatabase db = QSqlDatabase::database(QString::fromLatin1(kMainConnectionName));
+    if (!beginTransaction(QStringLiteral("Не удалось скопировать установку"), db)) {
+        return;
+    }
+
+    QSqlQuery sourceUnit(db);
+    sourceUnit.prepare(QStringLiteral(
+        "SELECT iUnitName, iComment, iDocuments, iDiscription, TRIAL922 "
+        "FROM Unit WHERE ID = ?;"));
     sourceUnit.addBindValue(sourceUnitId);
-    if (!executeQuery(sourceUnit, "Не удалось прочитать исходную установку") || !sourceUnit.next()) {
-        db.rollback();
+
+    if (!executeQuery(sourceUnit, QStringLiteral("Не удалось прочитать исходную установку")) || !sourceUnit.next()) {
+        rollbackTransaction(db);
         return;
     }
 
-    QSqlQuery insertUnit;
-    insertUnit.prepare("INSERT INTO Unit (iUnitName, iComment, iDocuments, iDiscription, [Index], DeleteDate, TRIAL922) "
-                       "VALUES (?, ?, ?, ?, ?, NULL, ?);");
+    int unitIndex = 1;
+    if (!nextUnitIndex(db, &unitIndex)) {
+        rollbackTransaction(db);
+        return;
+    }
+
+    QSqlQuery insertUnit(db);
+    insertUnit.prepare(QStringLiteral(
+        "INSERT INTO Unit (iUnitName, iComment, iDocuments, iDiscription, [Index], DeleteDate, TRIAL922) "
+        "VALUES (?, ?, ?, ?, ?, NULL, ?);"));
     insertUnit.addBindValue(sourceUnit.value(0).toString() + QStringLiteral(" (копия)"));
     insertUnit.addBindValue(sourceUnit.value(1));
     insertUnit.addBindValue(sourceUnit.value(2));
     insertUnit.addBindValue(sourceUnit.value(3));
-    insertUnit.addBindValue(nextUnitIndex());
+    insertUnit.addBindValue(unitIndex);
     insertUnit.addBindValue(sourceUnit.value(4));
 
-    if (!executeQuery(insertUnit, "Не удалось создать копию установки")) {
-        db.rollback();
+    if (!executeQuery(insertUnit, QStringLiteral("Не удалось создать копию установки"))) {
+        rollbackTransaction(db);
         return;
     }
 
     const qint64 newUnitId = insertUnit.lastInsertId().toLongLong();
 
-    QSqlQuery sourceBlocks;
-    sourceBlocks.prepare("SELECT iBlock_Name, iK_eruption, [iClass(I_II)_Yes_No], iPrintR, iDiscription, iDerevoVer_ID, TRIAL922 "
-                         "FROM Block WHERE ID_Unit = ? "
-                         "ORDER BY [Index];");
+    QSqlQuery sourceBlocks(db);
+    sourceBlocks.prepare(QStringLiteral(
+        "SELECT iBlock_Name, iK_eruption, [iClass(I_II)_Yes_No], iPrintR, iDiscription, iDerevoVer_ID, TRIAL922 "
+        "FROM Block WHERE ID_Unit = ? "
+        "ORDER BY [Index];"));
     sourceBlocks.addBindValue(sourceUnitId);
-    if (!executeQuery(sourceBlocks, "Не удалось прочитать блоки исходной установки")) {
-        db.rollback();
+
+    if (!executeQuery(sourceBlocks, QStringLiteral("Не удалось прочитать блоки исходной установки"))) {
+        rollbackTransaction(db);
         return;
     }
 
-    int indexValue = nextBlockIndex(newUnitId);
+    int blockIndex = 1;
+    if (!nextBlockIndex(db, newUnitId, &blockIndex)) {
+        rollbackTransaction(db);
+        return;
+    }
+
     while (sourceBlocks.next()) {
-        QSqlQuery insertBlock;
-        insertBlock.prepare("INSERT INTO Block "
-                            "(ID_Unit, iBlock_Name, iK_eruption, [iClass(I_II)_Yes_No], iPrintR, iDiscription, [Index], iDerevoVer_ID, TRIAL922) "
-                            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);");
+        QSqlQuery insertBlock(db);
+        insertBlock.prepare(QStringLiteral(
+            "INSERT INTO Block "
+            "(ID_Unit, iBlock_Name, iK_eruption, [iClass(I_II)_Yes_No], iPrintR, iDiscription, [Index], iDerevoVer_ID, TRIAL922) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);"));
         insertBlock.addBindValue(newUnitId);
         insertBlock.addBindValue(sourceBlocks.value(0).toString() + QStringLiteral(" (копия)"));
         insertBlock.addBindValue(sourceBlocks.value(1));
         insertBlock.addBindValue(sourceBlocks.value(2));
         insertBlock.addBindValue(sourceBlocks.value(3));
         insertBlock.addBindValue(sourceBlocks.value(4));
-        insertBlock.addBindValue(indexValue++);
+        insertBlock.addBindValue(blockIndex++);
         insertBlock.addBindValue(sourceBlocks.value(5));
         insertBlock.addBindValue(sourceBlocks.value(6));
 
-        if (!executeQuery(insertBlock, "Не удалось скопировать блок установки")) {
-            db.rollback();
+        if (!executeQuery(insertBlock, QStringLiteral("Не удалось скопировать блок установки"))) {
+            rollbackTransaction(db);
             return;
         }
     }
 
-    if (!db.commit()) {
-        db.rollback();
-        QMessageBox::critical(this, "Ошибка базы данных", "Не удалось завершить транзакцию копирования.");
+    if (!commitTransaction(QStringLiteral("Не удалось скопировать установку"), db)) {
         return;
     }
 
@@ -509,19 +668,27 @@ void Calculations_Energy_window::moveSelectedUnit(int direction)
         return;
     }
 
-    QSqlQuery neighborQuery;
+    if (!ensureDatabaseReady(QStringLiteral("Не удалось переместить установку"))) {
+        return;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database(QString::fromLatin1(kMainConnectionName));
+    QSqlQuery neighborQuery(db);
+
     if (direction < 0) {
-        neighborQuery.prepare("SELECT ID, [Index] FROM Unit "
-                              "WHERE [Index] >= 0 AND [Index] < ? "
-                              "ORDER BY [Index] DESC LIMIT 1;");
+        neighborQuery.prepare(QStringLiteral(
+            "SELECT ID, [Index] FROM Unit "
+            "WHERE [Index] >= 0 AND [Index] < ? "
+            "ORDER BY [Index] DESC LIMIT 1;"));
     } else {
-        neighborQuery.prepare("SELECT ID, [Index] FROM Unit "
-                              "WHERE [Index] >= 0 AND [Index] > ? "
-                              "ORDER BY [Index] ASC LIMIT 1;");
+        neighborQuery.prepare(QStringLiteral(
+            "SELECT ID, [Index] FROM Unit "
+            "WHERE [Index] >= 0 AND [Index] > ? "
+            "ORDER BY [Index] ASC LIMIT 1;"));
     }
     neighborQuery.addBindValue(currentIndexValue);
 
-    if (!executeQuery(neighborQuery, "Не удалось найти соседнюю установку")) {
+    if (!executeQuery(neighborQuery, QStringLiteral("Не удалось найти соседнюю установку"))) {
         return;
     }
 
@@ -532,33 +699,12 @@ void Calculations_Energy_window::moveSelectedUnit(int direction)
     const qint64 neighborId = neighborQuery.value(0).toLongLong();
     const int neighborIndexValue = neighborQuery.value(1).toInt();
 
-    QSqlDatabase db = QSqlDatabase::database();
-    if (!db.transaction()) {
-        QMessageBox::critical(this, "Ошибка базы данных", "Не удалось начать транзакцию перестановки.");
-        return;
-    }
-
-    QSqlQuery updateCurrent;
-    updateCurrent.prepare("UPDATE Unit SET [Index] = ? WHERE ID = ?;");
-    updateCurrent.addBindValue(neighborIndexValue);
-    updateCurrent.addBindValue(unitId);
-    if (!executeQuery(updateCurrent, "Не удалось обновить индекс текущей установки")) {
-        db.rollback();
-        return;
-    }
-
-    QSqlQuery updateNeighbor;
-    updateNeighbor.prepare("UPDATE Unit SET [Index] = ? WHERE ID = ?;");
-    updateNeighbor.addBindValue(currentIndexValue);
-    updateNeighbor.addBindValue(neighborId);
-    if (!executeQuery(updateNeighbor, "Не удалось обновить индекс соседней установки")) {
-        db.rollback();
-        return;
-    }
-
-    if (!db.commit()) {
-        db.rollback();
-        QMessageBox::critical(this, "Ошибка базы данных", "Не удалось завершить перестановку установок.");
+    if (!swapIndexes(QStringLiteral("Unit"),
+                     unitId,
+                     currentIndexValue,
+                     neighborId,
+                     neighborIndexValue,
+                     QStringLiteral("Не удалось изменить порядок установок"))) {
         return;
     }
 
@@ -578,24 +724,45 @@ void Calculations_Energy_window::addBlock()
         return;
     }
 
-    QSqlQuery insert;
-    insert.prepare("INSERT INTO Block "
-                   "(ID_Unit, iBlock_Name, iK_eruption, [iClass(I_II)_Yes_No], iPrintR, iDiscription, [Index]) "
-                   "VALUES (?, ?, ?, ?, ?, ?, ?);");
+    if (!ensureDatabaseReady(QStringLiteral("Не удалось добавить блок"))) {
+        return;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database(QString::fromLatin1(kMainConnectionName));
+    if (!beginTransaction(QStringLiteral("Не удалось добавить блок"), db)) {
+        return;
+    }
+
+    int blockIndex = 1;
+    if (!nextBlockIndex(db, unitId, &blockIndex)) {
+        rollbackTransaction(db);
+        return;
+    }
+
+    QSqlQuery insert(db);
+    insert.prepare(QStringLiteral(
+        "INSERT INTO Block "
+        "(ID_Unit, iBlock_Name, iK_eruption, [iClass(I_II)_Yes_No], iPrintR, iDiscription, [Index]) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?);"));
     insert.addBindValue(unitId);
     insert.addBindValue(QStringLiteral("Новый блок"));
     insert.addBindValue(0.1);
     insert.addBindValue(false);
     insert.addBindValue(false);
     insert.addBindValue(QString());
-    insert.addBindValue(nextBlockIndex(unitId));
+    insert.addBindValue(blockIndex);
 
-    if (!executeQuery(insert, "Не удалось добавить блок")) {
+    if (!executeQuery(insert, QStringLiteral("Не удалось добавить блок"))) {
+        rollbackTransaction(db);
+        return;
+    }
+
+    if (!commitTransaction(QStringLiteral("Не удалось добавить блок"), db)) {
         return;
     }
 
     refreshBlocks(insert.lastInsertId().toLongLong());
-    showNotImplemented("Редактор блока");
+    showNotImplemented(QStringLiteral("Редактор блока"));
 }
 
 void Calculations_Energy_window::deleteSelectedBlock()
@@ -605,10 +772,16 @@ void Calculations_Energy_window::deleteSelectedBlock()
         return;
     }
 
-    QSqlQuery query;
-    query.prepare("DELETE FROM Block WHERE ID = ?;");
+    if (!ensureDatabaseReady(QStringLiteral("Не удалось удалить блок"))) {
+        return;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database(QString::fromLatin1(kMainConnectionName));
+    QSqlQuery query(db);
+    query.prepare(QStringLiteral("DELETE FROM Block WHERE ID = ?;"));
     query.addBindValue(blockId);
-    if (!executeQuery(query, "Не удалось удалить блок")) {
+
+    if (!executeQuery(query, QStringLiteral("Не удалось удалить блок"))) {
         return;
     }
 
@@ -617,35 +790,59 @@ void Calculations_Energy_window::deleteSelectedBlock()
 
 void Calculations_Energy_window::copySelectedBlock()
 {
-    const qint64 blockId = selectedBlockId();
+    const qint64 sourceBlockId = selectedBlockId();
     const qint64 unitId = selectedUnitId();
-    if (blockId < 0 || unitId < 0) {
+    if (sourceBlockId < 0 || unitId < 0) {
         return;
     }
 
-    QSqlQuery source;
-    source.prepare("SELECT iBlock_Name, iK_eruption, [iClass(I_II)_Yes_No], iPrintR, iDiscription, iDerevoVer_ID, TRIAL922 "
-                   "FROM Block WHERE ID = ?;");
-    source.addBindValue(blockId);
-    if (!executeQuery(source, "Не удалось прочитать исходный блок") || !source.next()) {
+    if (!ensureDatabaseReady(QStringLiteral("Не удалось скопировать блок"))) {
         return;
     }
 
-    QSqlQuery insert;
-    insert.prepare("INSERT INTO Block "
-                   "(ID_Unit, iBlock_Name, iK_eruption, [iClass(I_II)_Yes_No], iPrintR, iDiscription, [Index], iDerevoVer_ID, TRIAL922) "
-                   "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);");
+    QSqlDatabase db = QSqlDatabase::database(QString::fromLatin1(kMainConnectionName));
+    if (!beginTransaction(QStringLiteral("Не удалось скопировать блок"), db)) {
+        return;
+    }
+
+    QSqlQuery source(db);
+    source.prepare(QStringLiteral(
+        "SELECT iBlock_Name, iK_eruption, [iClass(I_II)_Yes_No], iPrintR, iDiscription, iDerevoVer_ID, TRIAL922 "
+        "FROM Block WHERE ID = ?;"));
+    source.addBindValue(sourceBlockId);
+
+    if (!executeQuery(source, QStringLiteral("Не удалось прочитать исходный блок")) || !source.next()) {
+        rollbackTransaction(db);
+        return;
+    }
+
+    int blockIndex = 1;
+    if (!nextBlockIndex(db, unitId, &blockIndex)) {
+        rollbackTransaction(db);
+        return;
+    }
+
+    QSqlQuery insert(db);
+    insert.prepare(QStringLiteral(
+        "INSERT INTO Block "
+        "(ID_Unit, iBlock_Name, iK_eruption, [iClass(I_II)_Yes_No], iPrintR, iDiscription, [Index], iDerevoVer_ID, TRIAL922) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);"));
     insert.addBindValue(unitId);
     insert.addBindValue(source.value(0).toString() + QStringLiteral(" (копия)"));
     insert.addBindValue(source.value(1));
     insert.addBindValue(source.value(2));
     insert.addBindValue(source.value(3));
     insert.addBindValue(source.value(4));
-    insert.addBindValue(nextBlockIndex(unitId));
+    insert.addBindValue(blockIndex);
     insert.addBindValue(source.value(5));
     insert.addBindValue(source.value(6));
 
-    if (!executeQuery(insert, "Не удалось скопировать блок")) {
+    if (!executeQuery(insert, QStringLiteral("Не удалось создать копию блока"))) {
+        rollbackTransaction(db);
+        return;
+    }
+
+    if (!commitTransaction(QStringLiteral("Не удалось скопировать блок"), db)) {
         return;
     }
 
@@ -665,20 +862,28 @@ void Calculations_Energy_window::moveSelectedBlock(int direction)
         return;
     }
 
-    QSqlQuery neighborQuery;
+    if (!ensureDatabaseReady(QStringLiteral("Не удалось переместить блок"))) {
+        return;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database(QString::fromLatin1(kMainConnectionName));
+    QSqlQuery neighborQuery(db);
+
     if (direction < 0) {
-        neighborQuery.prepare("SELECT ID, [Index] FROM Block "
-                              "WHERE ID_Unit = ? AND [Index] < ? "
-                              "ORDER BY [Index] DESC LIMIT 1;");
+        neighborQuery.prepare(QStringLiteral(
+            "SELECT ID, [Index] FROM Block "
+            "WHERE ID_Unit = ? AND [Index] < ? "
+            "ORDER BY [Index] DESC LIMIT 1;"));
     } else {
-        neighborQuery.prepare("SELECT ID, [Index] FROM Block "
-                              "WHERE ID_Unit = ? AND [Index] > ? "
-                              "ORDER BY [Index] ASC LIMIT 1;");
+        neighborQuery.prepare(QStringLiteral(
+            "SELECT ID, [Index] FROM Block "
+            "WHERE ID_Unit = ? AND [Index] > ? "
+            "ORDER BY [Index] ASC LIMIT 1;"));
     }
     neighborQuery.addBindValue(unitId);
     neighborQuery.addBindValue(currentIndexValue);
 
-    if (!executeQuery(neighborQuery, "Не удалось найти соседний блок")) {
+    if (!executeQuery(neighborQuery, QStringLiteral("Не удалось найти соседний блок"))) {
         return;
     }
 
@@ -689,33 +894,12 @@ void Calculations_Energy_window::moveSelectedBlock(int direction)
     const qint64 neighborId = neighborQuery.value(0).toLongLong();
     const int neighborIndexValue = neighborQuery.value(1).toInt();
 
-    QSqlDatabase db = QSqlDatabase::database();
-    if (!db.transaction()) {
-        QMessageBox::critical(this, "Ошибка базы данных", "Не удалось начать транзакцию перестановки.");
-        return;
-    }
-
-    QSqlQuery updateCurrent;
-    updateCurrent.prepare("UPDATE Block SET [Index] = ? WHERE ID = ?;");
-    updateCurrent.addBindValue(neighborIndexValue);
-    updateCurrent.addBindValue(blockId);
-    if (!executeQuery(updateCurrent, "Не удалось обновить индекс текущего блока")) {
-        db.rollback();
-        return;
-    }
-
-    QSqlQuery updateNeighbor;
-    updateNeighbor.prepare("UPDATE Block SET [Index] = ? WHERE ID = ?;");
-    updateNeighbor.addBindValue(currentIndexValue);
-    updateNeighbor.addBindValue(neighborId);
-    if (!executeQuery(updateNeighbor, "Не удалось обновить индекс соседнего блока")) {
-        db.rollback();
-        return;
-    }
-
-    if (!db.commit()) {
-        db.rollback();
-        QMessageBox::critical(this, "Ошибка базы данных", "Не удалось завершить перестановку блоков.");
+    if (!swapIndexes(QStringLiteral("Block"),
+                     blockId,
+                     currentIndexValue,
+                     neighborId,
+                     neighborIndexValue,
+                     QStringLiteral("Не удалось изменить порядок блоков"))) {
         return;
     }
 
@@ -727,47 +911,47 @@ void Calculations_Energy_window::buildInterface()
     QWidget *central = new QWidget(this);
     setCentralWidget(central);
 
-    setWindowTitle("Расчеты энергопотенциалов");
+    setWindowTitle(QStringLiteral("Расчеты энергопотенциалов"));
     resize(1180, 660);
 
-    QLabel *titleLabel = new QLabel("Расчеты энергопотенциалов и категорий взрывоопасности", this);
+    QLabel *titleLabel = new QLabel(QStringLiteral("Расчеты энергопотенциалов и категорий взрывоопасности"), this);
     QFont titleFont;
     titleFont.setPointSize(15);
     titleFont.setBold(true);
     titleLabel->setFont(titleFont);
 
-    QLabel *unitsLabel = new QLabel("Установки :", this);
-    unitsLabel->setObjectName("sectionLabel");
+    QLabel *unitsLabel = new QLabel(QStringLiteral("Установки :"), this);
+    unitsLabel->setObjectName(QStringLiteral("sectionLabel"));
 
-    QLabel *blocksLabel = new QLabel("Блоки :", this);
-    blocksLabel->setObjectName("sectionLabel");
+    QLabel *blocksLabel = new QLabel(QStringLiteral("Блоки :"), this);
+    blocksLabel->setObjectName(QStringLiteral("sectionLabel"));
 
     createUnitsTable();
     createBlocksTable();
 
-    QPushButton *unitEditButton = createButton("Редактор");
-    unitAddButton = createButton("Добавить");
-    unitDeleteButton = createButton("Удалить");
-    unitCopyButton = createButton("Копировать");
-    QPushButton *reportButton = createButton("Отчёт");
-    unitDeletedButton = createButton("Удаленные");
+    QPushButton *unitEditButton = createButton(QStringLiteral("Редактор"));
+    unitAddButton = createButton(QStringLiteral("Добавить"));
+    unitDeleteButton = createButton(QStringLiteral("Удалить"));
+    unitCopyButton = createButton(QStringLiteral("Копировать"));
+    QPushButton *reportButton = createButton(QStringLiteral("Отчёт"));
+    unitDeletedButton = createButton(QStringLiteral("Удаленные"));
 
-    unitUpButton = createButton("⌃", 45);
-    unitDownButton = createButton("⌄", 45);
+    unitUpButton = createButton(QStringLiteral("⌃"), 45);
+    unitDownButton = createButton(QStringLiteral("⌄"), 45);
 
-    QPushButton *blockEditButton = createButton("Редактор");
-    blockAddButton = createButton("Добавить");
-    blockDeleteButton = createButton("Удалить");
-    blockCopyButton = createButton("Копировать");
+    QPushButton *blockEditButton = createButton(QStringLiteral("Редактор"));
+    blockAddButton = createButton(QStringLiteral("Добавить"));
+    blockDeleteButton = createButton(QStringLiteral("Удалить"));
+    blockCopyButton = createButton(QStringLiteral("Копировать"));
 
-    blockUpButton = createButton("⌃", 45);
-    blockDownButton = createButton("⌄", 45);
+    blockUpButton = createButton(QStringLiteral("⌃"), 45);
+    blockDownButton = createButton(QStringLiteral("⌄"), 45);
 
-    closeButton = createButton("Закрыть");
-    QPushButton *helpButton = createButton("Помощь");
+    closeButton = createButton(QStringLiteral("Закрыть"));
+    QPushButton *helpButton = createButton(QStringLiteral("Помощь"));
 
     QWidget *contentPanel = new QWidget(this);
-    contentPanel->setObjectName("contentPanel");
+    contentPanel->setObjectName(QStringLiteral("contentPanel"));
 
     QVBoxLayout *unitSideButtons = new QVBoxLayout;
     unitSideButtons->setSpacing(4);
@@ -828,37 +1012,29 @@ void Calculations_Energy_window::buildInterface()
     mainLayout->addLayout(bottomLayout);
 
     connect(unitEditButton, &QPushButton::clicked, this, [this]() {
-        showNotImplemented("Редактор установки");
+        showNotImplemented(QStringLiteral("Редактор установки"));
     });
     connect(reportButton, &QPushButton::clicked, this, [this]() {
-        showNotImplemented("Отчёт по установке");
+        showNotImplemented(QStringLiteral("Отчёт по установке"));
     });
     connect(unitAddButton, &QPushButton::clicked, this, &Calculations_Energy_window::addUnit);
     connect(unitDeleteButton, &QPushButton::clicked, this, &Calculations_Energy_window::deleteSelectedUnit);
     connect(unitCopyButton, &QPushButton::clicked, this, &Calculations_Energy_window::copySelectedUnit);
     connect(unitDeletedButton, &QPushButton::clicked, this, &Calculations_Energy_window::toggleDeletedUnitsMode);
-    connect(unitUpButton, &QPushButton::clicked, this, [this]() {
-        moveSelectedUnit(-1);
-    });
-    connect(unitDownButton, &QPushButton::clicked, this, [this]() {
-        moveSelectedUnit(1);
-    });
+    connect(unitUpButton, &QPushButton::clicked, this, [this]() { moveSelectedUnit(-1); });
+    connect(unitDownButton, &QPushButton::clicked, this, [this]() { moveSelectedUnit(1); });
 
     connect(blockEditButton, &QPushButton::clicked, this, [this]() {
-        showNotImplemented("Редактор блока");
+        showNotImplemented(QStringLiteral("Редактор блока"));
     });
     connect(blockAddButton, &QPushButton::clicked, this, &Calculations_Energy_window::addBlock);
     connect(blockDeleteButton, &QPushButton::clicked, this, &Calculations_Energy_window::deleteSelectedBlock);
     connect(blockCopyButton, &QPushButton::clicked, this, &Calculations_Energy_window::copySelectedBlock);
-    connect(blockUpButton, &QPushButton::clicked, this, [this]() {
-        moveSelectedBlock(-1);
-    });
-    connect(blockDownButton, &QPushButton::clicked, this, [this]() {
-        moveSelectedBlock(1);
-    });
+    connect(blockUpButton, &QPushButton::clicked, this, [this]() { moveSelectedBlock(-1); });
+    connect(blockDownButton, &QPushButton::clicked, this, [this]() { moveSelectedBlock(1); });
 
     connect(helpButton, &QPushButton::clicked, this, [this]() {
-        showNotImplemented("Контекстная помощь (getHelp(2100))");
+        showNotImplemented(QStringLiteral("Контекстная помощь (getHelp(2100))"));
     });
 
     connect(closeButton, &QPushButton::clicked, this, &Calculations_Energy_window::close);

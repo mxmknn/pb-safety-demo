@@ -2,10 +2,13 @@
 #define CALCULATIONS_OF_ENERGY_POTENTIALS_WINDOW_H
 
 #include <QMainWindow>
+#include <QString>
 
 class QPushButton;
-class QTableView;
+class QSqlDatabase;
+class QSqlQuery;
 class QStandardItemModel;
+class QTableView;
 
 class Calculations_Energy_window : public QMainWindow
 {
@@ -19,6 +22,25 @@ private:
     enum ItemRoles {
         IdRole = Qt::UserRole + 1,
         IndexRole
+    };
+
+    enum UnitColumns {
+        UnitNameColumn = 0,
+        UnitCommentColumn,
+        UnitColumnCount
+    };
+
+    enum BlockColumns {
+        BlockNameColumn = 0,
+        BlockKEruptionColumn,
+        BlockClassColumn,
+        BlockCategoryColumn,
+        BlockTotalEnergyColumn,
+        BlockReducedMassColumn,
+        BlockRelativePotentialColumn,
+        BlockRadiusColumn,
+        BlockPrintRColumn,
+        BlockColumnCount
     };
 
     QTableView *unitsTable = nullptr;
@@ -48,18 +70,39 @@ private:
     void createBlocksTable();
     QPushButton *createButton(const QString &text, int width = 110);
 
+    void onUnitsSelectionChanged();
+    void onBlocksSelectionChanged();
+
     void refreshUnits(qint64 preferredUnitId = -1);
     void refreshBlocks(qint64 preferredBlockId = -1);
+    void clearBlocks();
     void updateActionStates();
+
+    bool ensureDatabaseReady(const QString &actionName) const;
+    bool executeQuery(QSqlQuery &query, const QString &actionName) const;
+    bool beginTransaction(const QString &actionName, QSqlDatabase &db) const;
+    bool commitTransaction(const QString &actionName, QSqlDatabase &db) const;
+    void rollbackTransaction(QSqlDatabase &db) const;
+
+    int findRowById(const QStandardItemModel *model, qint64 id) const;
+    qint64 selectedId(const QTableView *table, const QStandardItemModel *model) const;
+    int selectedIndexValue(const QTableView *table, const QStandardItemModel *model) const;
+    void selectRow(QTableView *table, QStandardItemModel *model, int row) const;
 
     qint64 selectedUnitId() const;
     qint64 selectedBlockId() const;
     int selectedUnitIndexValue() const;
     int selectedBlockIndexValue() const;
 
-    int nextUnitIndex() const;
-    int nextBlockIndex(qint64 unitId) const;
-    bool executeQuery(class QSqlQuery &query, const QString &actionName);
+    bool nextUnitIndex(QSqlDatabase &db, int *value) const;
+    bool nextBlockIndex(QSqlDatabase &db, qint64 unitId, int *value) const;
+    bool swapIndexes(const QString &tableName,
+                     qint64 currentId,
+                     int currentIndex,
+                     qint64 neighborId,
+                     int neighborIndex,
+                     const QString &actionName);
+
     void showNotImplemented(const QString &actionName);
 
     void addUnit();

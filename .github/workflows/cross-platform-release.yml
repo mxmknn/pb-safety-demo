@@ -1,0 +1,110 @@
+name: Cross Platform Release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux
+            host: linux
+            arch: gcc_64
+            artifact_name: pb-safety-linux-release
+          - os: macos-14
+            platform: macos
+            host: mac
+            arch: clang_64
+            artifact_name: pb-safety-macos-release
+          - os: windows-2022
+            platform: windows
+            host: windows
+            arch: win64_mingw
+            artifact_name: pb-safety-windows-release
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.3'
+          host: ${{ matrix.host }}
+          target: desktop
+          arch: ${{ matrix.arch }}
+          cache: true
+
+      - name: Configure & Build (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel
+
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p package
+          cp build/pb-safety package/
+          chmod +x package/pb-safety
+          tar -czf pb-safety-linux-release.tar.gz -C package .
+
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          mkdir -p package
+          cp -R build/pb-safety.app package/
+          macdeployqt package/pb-safety.app
+          ditto -c -k --sequesterRsrc --keepParent package/pb-safety.app pb-safety-macos-release.zip
+
+      - name: Configure & Build (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release --parallel
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path package -Force | Out-Null
+          $exe = Get-ChildItem -Path build -Recurse -Filter pb-safety.exe | Select-Object -First 1
+          if (-not $exe) {
+            throw "pb-safety.exe not found in build output"
+          }
+          Copy-Item $exe.FullName package\pb-safety.exe
+          windeployqt package\pb-safety.exe
+          Compress-Archive -Path package\* -DestinationPath pb-safety-windows-release.zip -Force
+
+      - name: Upload artifact (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: pb-safety-linux-release.tar.gz
+
+      - name: Upload artifact (macOS)
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: pb-safety-macos-release.zip
+
+      - name: Upload artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: pb-safety-windows-release.zip

@@ -16,6 +16,8 @@ set(TS_FILES pb-safety_ru_RU.ts)
 
 set(PROJECT_SOURCES
     main.cpp
+    database_connection.h
+    database_connection.cpp
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui

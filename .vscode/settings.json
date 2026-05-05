@@ -1,0 +1,17 @@
+
+{
+
+  "cmake.configureSettings": {
+
+    "CMAKE_PREFIX_PATH": "/opt/homebrew/opt/qt",
+
+    "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+
+  },
+
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+
+}
+
