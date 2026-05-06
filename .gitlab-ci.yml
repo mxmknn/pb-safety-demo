@@ -1,0 +1,61 @@
+stages:
+  - build
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "web"
+
+default:
+  image: ubuntu:22.04
+  interruptible: true
+  variables:
+    DEBIAN_FRONTEND: noninteractive
+    CCACHE_DIR: "$CI_PROJECT_DIR/.ccache"
+    CCACHE_MAXSIZE: "500M"
+  cache:
+    key: "ccache-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .ccache/
+  before_script:
+    - apt-get update
+    - |
+      apt-get install -y --no-install-recommends \
+        build-essential \
+        ccache \
+        cmake \
+        ninja-build \
+        qtbase5-dev \
+        qtbase5-dev-tools \
+        sqlite3 \
+        libqt5sql5-sqlite \
+        zip
+    - rm -rf /var/lib/apt/lists/*
+
+build_linux_release:
+  stage: build
+  script:
+    - ccache --max-size="${CCACHE_MAXSIZE}"
+    - ccache --show-stats
+    - cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DQT_DEFAULT_MAJOR_VERSION=5 -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    - cmake --build build --parallel
+    - ccache --show-stats
+    - mkdir -p package/pb-safety
+    - cp build/pb-safety package/pb-safety/
+    - cp start.sh package/pb-safety/
+    - cp install_redos_shortcut.sh package/pb-safety/
+    - cp PVB_DB.db package/pb-safety/
+    - chmod +x package/pb-safety/pb-safety package/pb-safety/start.sh package/pb-safety/install_redos_shortcut.sh
+    - |
+      RUNNER_ARCH_SAFE="$(echo "${CI_RUNNER_EXECUTABLE_ARCH:-unknown}" | tr '/' '-')"
+      (
+        cd package
+        zip -r "../pb-safety-linux-${RUNNER_ARCH_SAFE}-${CI_COMMIT_SHORT_SHA}.zip" pb-safety
+      )
+  artifacts:
+    name: "pb-safety-linux-${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHORT_SHA}"
+    when: on_success
+    expire_in: 14 days
+    paths:
+      - pb-safety-linux-*.zip
