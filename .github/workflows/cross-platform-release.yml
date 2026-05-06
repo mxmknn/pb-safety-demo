@@ -15,8 +15,13 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
-            platform: linux
-            artifact_name: pb-safety-linux-release
+            platform: linux-x64
+            artifact_name: pb-safety-linux-x64-release
+            package_file: pb-safety-linux-x64-release.zip
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+            artifact_name: pb-safety-linux-arm64-release
+            package_file: pb-safety-linux-arm64-release.zip
           - os: macos-14
             platform: macos
             host: mac
@@ -37,10 +42,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ccache-linux-${{ github.ref_name }}-${{ hashFiles('CMakeLists.txt', '**/*.h', '**/*.cpp', '**/*.ui') }}
+          key: ccache-${{ matrix.platform }}-${{ github.ref_name }}-${{ hashFiles('CMakeLists.txt', '**/*.h', '**/*.cpp', '**/*.ui') }}
           restore-keys: |
-            ccache-linux-${{ github.ref_name }}-
-            ccache-linux-
+            ccache-${{ matrix.platform }}-${{ github.ref_name }}-
+            ccache-${{ matrix.platform }}-
 
       - name: Install Qt (Linux)
         if: runner.os == 'Linux'
@@ -92,7 +97,7 @@ jobs:
           chmod +x package/pb-safety/pb-safety package/pb-safety/start.sh package/pb-safety/install_redos_shortcut.sh
           (
             cd package
-            zip -r ../pb-safety-linux-release.zip pb-safety
+            zip -r ../${{ matrix.package_file }} pb-safety
           )
 
       - name: Package (macOS)
@@ -129,7 +134,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: pb-safety-linux-release.zip
+          path: ${{ matrix.package_file }}
 
       - name: Upload artifact (macOS)
         if: runner.os == 'macOS'
