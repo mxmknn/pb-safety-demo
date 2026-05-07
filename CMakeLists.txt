@@ -12,6 +12,38 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Sql)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Sql)
 
+include(FetchContent)
+option(PB_SAFETY_ENABLE_LIMEREPORT "Enable report generation through LimeReport" ON)
+option(PB_SAFETY_ENABLE_WINDOWS_DEPLOY "Run windeployqt after build on Windows" ON)
+option(PB_SAFETY_ENABLE_MACOS_DMG "Enable DMG packaging on macOS" ON)
+
+set(PB_SAFETY_HAS_LIMEREPORT OFF)
+if(PB_SAFETY_ENABLE_LIMEREPORT)
+    set(LIMEREPORT_DEMO OFF CACHE BOOL "" FORCE)
+    set(LIMEREPORT_STATIC ON CACHE BOOL "" FORCE)
+    set(ENABLE_ZINT OFF CACHE BOOL "" FORCE)
+    set(ENABLE_DIALOG_DESIGNER OFF CACHE BOOL "" FORCE)
+    set(HAVE_UI_LOADER OFF CACHE BOOL "" FORCE)
+
+    if(QT_VERSION_MAJOR EQUAL 6)
+        set(USE_QT6 ON CACHE BOOL "" FORCE)
+    endif()
+
+    FetchContent_Declare(
+        LimeReport
+        GIT_REPOSITORY https://github.com/fralx/LimeReport.git
+        GIT_TAG e6210b58a46ab14c0ff8a409b5fa5d339937ea7c
+    )
+    FetchContent_MakeAvailable(LimeReport)
+
+    if(TARGET limereport-qt${QT_VERSION_MAJOR})
+        find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Qml Xml PrintSupport Svg)
+        set(PB_SAFETY_HAS_LIMEREPORT ON)
+    else()
+        message(WARNING "LimeReport target was not created, report generation will be disabled.")
+    endif()
+endif()
+
 set(TS_FILES pb-safety_ru_RU.ts)
 
 set(PROJECT_SOURCES
@@ -23,6 +55,7 @@ set(PROJECT_SOURCES
     mainwindow.ui
     calculations_of_energy_potentials_window.h
     calculations_of_energy_potentials_window.cpp
+    reports.qrc
     ${TS_FILES}
 )
 
@@ -52,6 +85,42 @@ target_link_libraries(pb-safety PRIVATE
     Qt${QT_VERSION_MAJOR}::Sql
 )
 
+if(PB_SAFETY_HAS_LIMEREPORT)
+    target_link_libraries(pb-safety PRIVATE limereport-qt${QT_VERSION_MAJOR})
+    target_compile_definitions(pb-safety PRIVATE PB_SAFETY_HAS_LIMEREPORT=1)
+endif()
+
+if(WIN32 AND PB_SAFETY_ENABLE_WINDOWS_DEPLOY)
+    get_target_property(PB_SAFETY_QMAKE_EXECUTABLE Qt${QT_VERSION_MAJOR}::qmake IMPORTED_LOCATION)
+    if(PB_SAFETY_QMAKE_EXECUTABLE)
+        get_filename_component(PB_SAFETY_QT_BIN_DIR "${PB_SAFETY_QMAKE_EXECUTABLE}" DIRECTORY)
+    endif()
+
+    find_program(PB_SAFETY_WINDEPLOYQT_EXECUTABLE
+        NAMES windeployqt
+        HINTS "${PB_SAFETY_QT_BIN_DIR}")
+
+    if(PB_SAFETY_WINDEPLOYQT_EXECUTABLE)
+        add_custom_command(TARGET pb-safety POST_BUILD
+            COMMAND "${PB_SAFETY_WINDEPLOYQT_EXECUTABLE}" --verbose 0 --no-translations "$<TARGET_FILE:pb-safety>"
+            COMMENT "Deploying Qt runtime dependencies with windeployqt"
+            VERBATIM)
+    else()
+        message(WARNING "windeployqt not found: automatic Windows runtime deployment is disabled.")
+    endif()
+
+    if(EXISTS "${CMAKE_SOURCE_DIR}/PVB_DB.db")
+        add_custom_command(TARGET pb-safety POST_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+                    "${CMAKE_SOURCE_DIR}/PVB_DB.db"
+                    "$<TARGET_FILE_DIR:pb-safety>/PVB_DB.db"
+            COMMENT "Copying PVB_DB.db next to the executable"
+            VERBATIM)
+    else()
+        message(WARNING "PVB_DB.db was not found in project root and will not be copied next to the executable.")
+    endif()
+endif()
+
 if(${QT_VERSION} VERSION_LESS 6.1.0)
     set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.pb-safety)
 endif()
@@ -66,11 +135,36 @@ set_target_properties(pb-safety PROPERTIES
 include(GNUInstallDirs)
 
 install(TARGETS pb-safety
-    BUNDLE DESTINATION .
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    BUNDLE DESTINATION . COMPONENT Runtime
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Runtime
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Runtime
 )
+
+if(EXISTS "${CMAKE_SOURCE_DIR}/PVB_DB.db")
+    if(APPLE)
+        install(FILES "${CMAKE_SOURCE_DIR}/PVB_DB.db"
+            DESTINATION "pb-safety.app/Contents/MacOS"
+            COMPONENT Runtime)
+    else()
+        install(FILES "${CMAKE_SOURCE_DIR}/PVB_DB.db"
+            DESTINATION ${CMAKE_INSTALL_BINDIR}
+            COMPONENT Runtime)
+    endif()
+endif()
+
+set(CPACK_PACKAGE_NAME "pb-safety")
+set(CPACK_PACKAGE_VENDOR "pb-safety")
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}")
+set(CPACK_COMPONENTS_ALL Runtime)
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(pb-safety)
 endif()
+
+if(APPLE AND PB_SAFETY_ENABLE_MACOS_DMG)
+    set(CPACK_GENERATOR "DragNDrop")
+    set(CPACK_DMG_VOLUME_NAME "pb-safety")
+endif()
+
+include(CPack)

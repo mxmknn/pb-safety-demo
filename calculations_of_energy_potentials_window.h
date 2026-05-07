@@ -10,6 +10,12 @@ class QSqlQuery;
 class QStandardItemModel;
 class QTableView;
 
+#ifdef PB_SAFETY_HAS_LIMEREPORT
+namespace LimeReport {
+class ReportEngine;
+}
+#endif
+
 class Calculations_Energy_window : public QMainWindow
 {
     Q_OBJECT
@@ -65,6 +71,10 @@ private:
     QPushButton *closeButton = nullptr;
     bool showDeletedUnits = false;
 
+#ifdef PB_SAFETY_HAS_LIMEREPORT
+    LimeReport::ReportEngine *reportEngine = nullptr;
+#endif
+
     void buildInterface();
     void createUnitsTable();
     void createBlocksTable();
@@ -104,6 +114,8 @@ private:
                      const QString &actionName);
 
     void showNotImplemented(const QString &actionName);
+    void generateUnitReport();
+    QStandardItemModel *buildUnitReportModel();
 
     void addUnit();
     void deleteSelectedUnit();

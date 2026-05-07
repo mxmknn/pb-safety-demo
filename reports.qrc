@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/reports">
+        <file alias="unit_blocks_report.lrxml">reports/unit_blocks_report.lrxml</file>
+    </qresource>
+</RCC>

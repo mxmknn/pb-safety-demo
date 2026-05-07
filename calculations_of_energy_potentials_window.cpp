@@ -1,6 +1,7 @@
 #include "calculations_of_energy_potentials_window.h"
 
 #include <QAbstractItemView>
+#include <QFile>
 #include <QFont>
 #include <QHeaderView>
 #include <QHBoxLayout>
@@ -12,12 +13,22 @@
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlQuery>
+#include <QStringList>
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QTableView>
 #include <QVariant>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <memory>
+
+#ifdef PB_SAFETY_HAS_LIMEREPORT
+#if __has_include(<limereport/lrreportengine.h>)
+#include <limereport/lrreportengine.h>
+#else
+#include <lrreportengine.h>
+#endif
+#endif
 
 namespace {
 constexpr auto kMainConnectionName = "pb_safety_main";
@@ -331,7 +342,7 @@ bool Calculations_Energy_window::swapIndexes(const QString &tableName,
     return commitTransaction(actionName, db);
 }
 
-void Calculations_Energy_window::refreshUnits(qint64 preferredUnitId)
+void Calculations_Energy_window::refreshUnits(qint64 preferredUnitId) //заполние таблицы установки из бд
 {
     if (!ensureDatabaseReady(QStringLiteral("Не удалось обновить список установок"))) {
         unitsModel->removeRows(0, unitsModel->rowCount());
@@ -400,7 +411,7 @@ void Calculations_Energy_window::refreshUnits(qint64 preferredUnitId)
     updateActionStates();
 }
 
-void Calculations_Energy_window::refreshBlocks(qint64 preferredBlockId)
+void Calculations_Energy_window::refreshBlocks(qint64 preferredBlockId) // чтение блоков (Block) для выбранной установки
 {
     blocksModel->removeRows(0, blocksModel->rowCount());
 
@@ -495,6 +506,119 @@ void Calculations_Energy_window::showNotImplemented(const QString &actionName)
     QMessageBox::information(this,
                              QStringLiteral("Функция в разработке"),
                              QStringLiteral("%1 будет реализовано на следующем этапе.").arg(actionName));
+}
+
+QStandardItemModel *Calculations_Energy_window::buildUnitReportModel()
+{
+    if (!unitsTable || !unitsModel || !blocksModel) {
+        return nullptr;
+    }
+
+    const QModelIndex unitIndex = unitsTable->currentIndex();
+    if (!unitIndex.isValid()) {
+        return nullptr;
+    }
+
+    const int unitRow = unitIndex.row();
+    const auto unitValue = [this, unitRow](int column) -> QString {
+        const QStandardItem *item = unitsModel->item(unitRow, column);
+        return item ? item->text() : QString();
+    };
+
+    const QString unitName = unitValue(UnitNameColumn);
+    const QString unitComment = unitValue(UnitCommentColumn);
+
+    auto *model = new QStandardItemModel(0, 4, this);
+    QStringList headerLabels;
+    headerLabels << QStringLiteral("CompanyName")
+                 << QStringLiteral("Address")
+                 << QStringLiteral("Phone")
+                 << QStringLiteral("Fax");
+    model->setHorizontalHeaderLabels(headerLabels);
+
+    const int blockCount = blocksModel->rowCount();
+    if (blockCount <= 0) {
+        model->appendRow({new QStandardItem(unitName),
+                          new QStandardItem(unitComment),
+                          new QStandardItem(QStringLiteral("Нет блоков")),
+                          new QStandardItem(QStringLiteral("-"))});
+        return model;
+    }
+
+    for (int row = 0; row < blockCount; ++row) {
+        const auto blockValue = [this, row](int column) -> QString {
+            const QStandardItem *item = blocksModel->item(row, column);
+            return item ? item->text() : QStringLiteral("-");
+        };
+
+        const QString details = QStringLiteral("k=%1, класс=%2, оценка зон=%3")
+                                    .arg(blockValue(BlockKEruptionColumn),
+                                         blockValue(BlockClassColumn),
+                                         blockValue(BlockPrintRColumn));
+
+        model->appendRow({new QStandardItem(unitName),
+                          new QStandardItem(unitComment),
+                          new QStandardItem(blockValue(BlockNameColumn)),
+                          new QStandardItem(details)});
+    }
+
+    return model;
+}
+
+void Calculations_Energy_window::generateUnitReport()
+{
+    if (selectedUnitId() < 0) {
+        QMessageBox::information(this,
+                                 QStringLiteral("Отчёт"),
+                                 QStringLiteral("Сначала выберите установку для формирования отчёта."));
+        return;
+    }
+
+#ifndef PB_SAFETY_HAS_LIMEREPORT
+    QMessageBox::warning(this,
+                         QStringLiteral("LimeReport не подключен"),
+                         QStringLiteral("Сборка выполнена без LimeReport.\n"
+                                        "Включите опцию PB_SAFETY_ENABLE_LIMEREPORT при конфигурации CMake."));
+    return;
+#else
+    std::unique_ptr<QStandardItemModel> reportModel(buildUnitReportModel());
+    if (!reportModel) {
+        QMessageBox::warning(this,
+                             QStringLiteral("Отчёт"),
+                             QStringLiteral("Не удалось подготовить данные для отчёта."));
+        return;
+    }
+
+    QFile templateFile(QStringLiteral(":/reports/unit_blocks_report.lrxml"));
+    if (!templateFile.open(QIODevice::ReadOnly)) {
+        QMessageBox::critical(this,
+                              QStringLiteral("Ошибка шаблона отчёта"),
+                              QStringLiteral("Не удалось открыть шаблон отчёта в ресурсах проекта."));
+        return;
+    }
+    QByteArray templateBytes = templateFile.readAll();
+    templateFile.close();
+
+    if (reportEngine) {
+        delete reportEngine;
+        reportEngine = nullptr;
+    }
+
+    reportEngine = new LimeReport::ReportEngine(this);
+    reportEngine->dataManager()->addModel(QStringLiteral("customers"), reportModel.release(), true);
+
+    if (!reportEngine->loadFromByteArray(&templateBytes)) {
+        QMessageBox::critical(this,
+                              QStringLiteral("Ошибка LimeReport"),
+                              QStringLiteral("Не удалось загрузить шаблон отчёта.\n\n%1")
+                                  .arg(reportEngine->lastError()));
+        delete reportEngine;
+        reportEngine = nullptr;
+        return;
+    }
+
+    reportEngine->previewReport();
+#endif
 }
 
 void Calculations_Energy_window::addUnit()
@@ -1014,9 +1138,7 @@ void Calculations_Energy_window::buildInterface()
     connect(unitEditButton, &QPushButton::clicked, this, [this]() {
         showNotImplemented(QStringLiteral("Редактор установки"));
     });
-    connect(reportButton, &QPushButton::clicked, this, [this]() {
-        showNotImplemented(QStringLiteral("Отчёт по установке"));
-    });
+    connect(reportButton, &QPushButton::clicked, this, &Calculations_Energy_window::generateUnitReport);
     connect(unitAddButton, &QPushButton::clicked, this, &Calculations_Energy_window::addUnit);
     connect(unitDeleteButton, &QPushButton::clicked, this, &Calculations_Energy_window::deleteSelectedUnit);
     connect(unitCopyButton, &QPushButton::clicked, this, &Calculations_Energy_window::copySelectedUnit);
