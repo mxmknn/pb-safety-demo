@@ -38,7 +38,7 @@ build_linux_release:
   script:
     - ccache --max-size="${CCACHE_MAXSIZE}"
     - ccache --show-stats
-    - cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DQT_DEFAULT_MAJOR_VERSION=5 -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    - cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DQT_DEFAULT_MAJOR_VERSION=5 -DPB_SAFETY_ENABLE_LIMEREPORT=OFF -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
     - cmake --build build --parallel
     - ccache --show-stats
     - mkdir -p package/pb-safety
