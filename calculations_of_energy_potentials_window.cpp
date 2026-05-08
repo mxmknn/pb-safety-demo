@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QRegularExpression>
 #include <QSignalBlocker>
 #include <QSqlDatabase>
 #include <QSqlError>
@@ -582,12 +583,6 @@ void Calculations_Energy_window::generateUnitReport()
     return;
 #else
     std::unique_ptr<QStandardItemModel> reportModel(buildUnitReportModel());
-    if (!reportModel) {
-        QMessageBox::warning(this,
-                             QStringLiteral("Отчёт"),
-                             QStringLiteral("Не удалось подготовить данные для отчёта."));
-        return;
-    }
 
     QFile templateFile(QStringLiteral(":/reports/unit_blocks_report.lrxml"));
     if (!templateFile.open(QIODevice::ReadOnly)) {
@@ -599,13 +594,30 @@ void Calculations_Energy_window::generateUnitReport()
     QByteArray templateBytes = templateFile.readAll();
     templateFile.close();
 
+    const QSqlDatabase db = QSqlDatabase::database(QString::fromLatin1(kMainConnectionName));
+    if (db.isValid() && !db.databaseName().isEmpty()) {
+        QString templateText = QString::fromUtf8(templateBytes);
+        const QString databaseNameTag =
+            QStringLiteral("<databaseName Type=\"QString\">%1</databaseName>")
+                .arg(db.databaseName().toHtmlEscaped());
+        templateText.replace(
+            QRegularExpression(
+                QStringLiteral("<databaseName Type=\"QString\">.*?</databaseName>"),
+                QRegularExpression::DotMatchesEverythingOption),
+            databaseNameTag);
+        templateBytes = templateText.toUtf8();
+    }
+
     if (reportEngine) {
         delete reportEngine;
         reportEngine = nullptr;
     }
 
     reportEngine = new LimeReport::ReportEngine(this);
-    reportEngine->dataManager()->addModel(QStringLiteral("customers"), reportModel.release(), true);
+    if (reportModel) {
+        // Legacy template support: keep optional model datasource if report expects "customers".
+        reportEngine->dataManager()->addModel(QStringLiteral("customers"), reportModel.release(), true);
+    }
 
     if (!reportEngine->loadFromByteArray(&templateBytes)) {
         QMessageBox::critical(this,
@@ -616,6 +628,8 @@ void Calculations_Energy_window::generateUnitReport()
         reportEngine = nullptr;
         return;
     }
+
+    reportEngine->dataManager()->setReportVariable(QStringLiteral("UnitID"), selectedUnitId());
 
     reportEngine->previewReport();
 #endif
