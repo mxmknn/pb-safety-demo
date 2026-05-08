@@ -81,7 +81,7 @@ jobs:
         if: runner.os == 'macOS'
         shell: bash
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DPB_SAFETY_ENABLE_LIMEREPORT=OFF
           cmake --build build --parallel
 
       - name: Package (Linux)
@@ -107,7 +107,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: cmd
         run: |
-          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DPB_SAFETY_ENABLE_LIMEREPORT=OFF -DPB_SAFETY_ENABLE_WINDOWS_DEPLOY=OFF
           cmake --build build --config Release --parallel
 
       - name: Package (Windows)
