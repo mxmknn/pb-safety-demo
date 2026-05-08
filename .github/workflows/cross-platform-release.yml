@@ -45,6 +45,16 @@ jobs:
             ccache-${{ matrix.platform }}-${{ github.ref_name }}-
             ccache-${{ matrix.platform }}-
 
+      - name: Restore ccache (macOS)
+        if: runner.os == 'macOS'
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/ccache
+          key: ccache-${{ matrix.platform }}-${{ github.ref_name }}-${{ hashFiles('CMakeLists.txt', '**/*.h', '**/*.cpp', '**/*.ui') }}
+          restore-keys: |
+            ccache-${{ matrix.platform }}-${{ github.ref_name }}-
+            ccache-${{ matrix.platform }}-
+
       - name: Install Qt (Linux)
         if: runner.os == 'Linux'
         shell: bash
@@ -65,6 +75,7 @@ jobs:
           host: ${{ matrix.host }}
           target: desktop
           arch: ${{ matrix.arch }}
+          archives: 'qtbase qtdeclarative qtsvg'
           cache: true
 
       - name: Configure & Build (Linux)
@@ -81,8 +92,12 @@ jobs:
         if: runner.os == 'macOS'
         shell: bash
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DPB_SAFETY_ENABLE_LIMEREPORT=OFF
+          brew install ccache
+          ccache --max-size=500M
+          ccache --show-stats
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DPB_SAFETY_ENABLE_LIMEREPORT=ON -DPB_SAFETY_REQUIRE_LIMEREPORT=ON -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build --parallel
+          ccache --show-stats
 
       - name: Package (Linux)
         if: runner.os == 'Linux'
@@ -107,7 +122,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: cmd
         run: |
-          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DPB_SAFETY_ENABLE_LIMEREPORT=OFF -DPB_SAFETY_ENABLE_WINDOWS_DEPLOY=OFF
+          cmake -S . -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DPB_SAFETY_ENABLE_LIMEREPORT=ON -DPB_SAFETY_REQUIRE_LIMEREPORT=ON -DPB_SAFETY_ENABLE_WINDOWS_DEPLOY=OFF
           cmake --build build --config Release --parallel
 
       - name: Package (Windows)

@@ -14,10 +14,17 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Sql)
 
 include(FetchContent)
 option(PB_SAFETY_ENABLE_LIMEREPORT "Enable report generation through LimeReport" ON)
+option(PB_SAFETY_REQUIRE_LIMEREPORT "Fail configuration when LimeReport is not available" ON)
 option(PB_SAFETY_ENABLE_WINDOWS_DEPLOY "Run windeployqt after build on Windows" ON)
 option(PB_SAFETY_ENABLE_MACOS_DMG "Enable DMG packaging on macOS" ON)
 
 set(PB_SAFETY_USE_LIMEREPORT ${PB_SAFETY_ENABLE_LIMEREPORT})
+if(PB_SAFETY_REQUIRE_LIMEREPORT AND NOT PB_SAFETY_ENABLE_LIMEREPORT)
+    message(FATAL_ERROR
+        "PB_SAFETY_REQUIRE_LIMEREPORT is ON, but PB_SAFETY_ENABLE_LIMEREPORT is OFF. "
+        "Enable LimeReport or disable requirement explicitly.")
+endif()
+
 if(PB_SAFETY_USE_LIMEREPORT)
     set(PB_SAFETY_LIMEREPORT_QT_COMPONENTS Qml Xml PrintSupport Svg Network)
     set(PB_SAFETY_LIMEREPORT_MISSING_QT_COMPONENTS)
@@ -47,10 +54,16 @@ if(PB_SAFETY_USE_LIMEREPORT)
 
     if(PB_SAFETY_LIMEREPORT_MISSING_QT_COMPONENTS)
         string(JOIN ", " PB_SAFETY_LIMEREPORT_MISSING_QT_COMPONENTS_TEXT ${PB_SAFETY_LIMEREPORT_MISSING_QT_COMPONENTS})
-        message(WARNING
-            "LimeReport support is disabled: missing Qt${QT_VERSION_MAJOR} components: "
-            "${PB_SAFETY_LIMEREPORT_MISSING_QT_COMPONENTS_TEXT}.")
-        set(PB_SAFETY_USE_LIMEREPORT OFF)
+        if(PB_SAFETY_REQUIRE_LIMEREPORT)
+            message(FATAL_ERROR
+                "LimeReport is required, but missing Qt${QT_VERSION_MAJOR} components: "
+                "${PB_SAFETY_LIMEREPORT_MISSING_QT_COMPONENTS_TEXT}.")
+        else()
+            message(WARNING
+                "LimeReport support is disabled: missing Qt${QT_VERSION_MAJOR} components: "
+                "${PB_SAFETY_LIMEREPORT_MISSING_QT_COMPONENTS_TEXT}.")
+            set(PB_SAFETY_USE_LIMEREPORT OFF)
+        endif()
     endif()
 endif()
 
@@ -76,7 +89,11 @@ if(PB_SAFETY_USE_LIMEREPORT)
     if(TARGET limereport-qt${QT_VERSION_MAJOR})
         set(PB_SAFETY_HAS_LIMEREPORT ON)
     else()
-        message(WARNING "LimeReport target was not created, report generation will be disabled.")
+        if(PB_SAFETY_REQUIRE_LIMEREPORT)
+            message(FATAL_ERROR "LimeReport is required, but target limereport-qt${QT_VERSION_MAJOR} was not created.")
+        else()
+            message(WARNING "LimeReport target was not created, report generation will be disabled.")
+        endif()
     endif()
 endif()
 
